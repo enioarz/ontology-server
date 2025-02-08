@@ -1,0 +1,11 @@
+[package]
+name = "website"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+curie = "0.1.3"
+horned-owl = "1.0.0"
+lazy_static = "1.5.0"
+serde = { version = "1.0.217", features = ["derive"] }
+tera = "1.20.0"

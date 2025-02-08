@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+    <head>
+        <title>{{ label }}</title>
+    </head>
+
+    <body>
+        <h1>{{ label }}</h1>
+        <p>{{ iri }}</p>
+        {% if definition %}
+        <p>{{ definition }}</p>
+        {% endif %} {% if example %}
+        <p>{{ example }}</p>
+        {% endif %} {% for ann in annotations %}
+        <a href="{{ ann.iri }}">{{ ann.display }}</a>
+        <p>{{ ann.value }}</p>
+        {% endfor %}
+    </body>
+</html>
