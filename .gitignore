@@ -1,1 +1,4 @@
 /target
+Cargo.lock
+ontology/
+.DS_Store
