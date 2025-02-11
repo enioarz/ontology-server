@@ -2,6 +2,7 @@ pub mod models;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 
+use curie::PrefixMapping;
 use horned_owl::model::ForIRI;
 use horned_owl::{
     model::{AnnotationSubject, AnnotationValue, Literal},
@@ -45,6 +46,15 @@ impl<A: ForIRI> Default for ClassCollection<A> {
         ClassCollection {
             hash_map: HashMap::new(),
             prefix_mapping: None,
+        }
+    }
+}
+
+impl<A: ForIRI> ClassCollection<A> {
+    pub fn new_with_prefix_mapping(pm: PrefixMapping) -> Self {
+        ClassCollection {
+            hash_map: HashMap::new(),
+            prefix_mapping: Some(pm),
         }
     }
 }
@@ -169,7 +179,7 @@ fn unpack_annotation_value<A: ForIRI>(av: &AnnotationValue<A>) -> Option<String>
 }
 
 impl<A: ForIRI> OntologyComponent<A> {
-    pub fn render(&self) -> Result<String, tera::Error> {
+    pub fn render_html(&self) -> Result<String, tera::Error> {
         let mut context = Context::new();
         match &self.label {
             Some(l) => context.insert("label", &l),
