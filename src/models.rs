@@ -31,7 +31,20 @@ pub struct OntologyAnnotation {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct ClassCollection<A: ForIRI> {
+pub struct OntologyMetadata {
+    pub iri: Option<String>,
+    pub version_iri: Option<String>,
+    pub prev_iri: Option<String>,
+    pub title: Option<String>,
+    pub license: Option<String>,
+    pub description: Option<String>,
+    pub contributors: Vec<OntologyAnnotation>,
+    pub annotations: Vec<OntologyAnnotation>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct OntologyContent<A: ForIRI> {
+    pub metadata: OntologyMetadata,
     pub hash_map: HashMap<A, OntologyComponent<A>>,
     #[serde(skip_serializing, skip_deserializing)]
     pub prefix_mapping: Option<PrefixMapping>,

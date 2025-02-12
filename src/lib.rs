@@ -9,7 +9,7 @@ use horned_owl::{
     visitor::immutable::Visit,
 };
 use lazy_static::lazy_static;
-use models::{ClassCollection, Kind, OntologyAnnotation, OntologyComponent};
+use models::{Kind, OntologyAnnotation, OntologyComponent, OntologyContent, OntologyMetadata};
 use tera::Context;
 use tera::Tera;
 lazy_static! {
@@ -41,25 +41,42 @@ impl<A: ForIRI> OntologyComponent<A> {
     }
 }
 
-impl<A: ForIRI> Default for ClassCollection<A> {
+impl<A: ForIRI> Default for OntologyContent<A> {
     fn default() -> Self {
-        ClassCollection {
+        OntologyContent {
+            metadata: OntologyMetadata::new(),
             hash_map: HashMap::new(),
             prefix_mapping: None,
         }
     }
 }
 
-impl<A: ForIRI> ClassCollection<A> {
+impl<A: ForIRI> OntologyContent<A> {
     pub fn new_with_prefix_mapping(pm: PrefixMapping) -> Self {
-        ClassCollection {
+        OntologyContent {
+            metadata: OntologyMetadata::new(),
             hash_map: HashMap::new(),
             prefix_mapping: Some(pm),
         }
     }
 }
 
-impl<A: ForIRI> ClassCollection<A> {
+impl OntologyMetadata {
+    pub fn new() -> Self {
+        OntologyMetadata {
+            iri: None,
+            version_iri: None,
+            prev_iri: None,
+            title: None,
+            description: None,
+            license: None,
+            contributors: vec![],
+            annotations: vec![],
+        }
+    }
+}
+
+impl<A: ForIRI> OntologyContent<A> {
     pub fn as_mut_hashmap(&mut self) -> &mut HashMap<A, OntologyComponent<A>> {
         &mut self.hash_map
     }
@@ -69,7 +86,22 @@ impl<A: ForIRI> ClassCollection<A> {
     }
 }
 
-impl<A: ForIRI> Visit<A> for ClassCollection<A> {
+impl<A: ForIRI> Visit<A> for OntologyContent<A> {
+    fn visit_ontology_id(&mut self, oid: &horned_owl::model::OntologyID<A>) {
+        match &oid.iri {
+            Some(i) => {
+                self.metadata.iri = Some(i.into());
+            }
+            None => (),
+        }
+        match &oid.viri {
+            Some(vi) => {
+                self.metadata.version_iri = Some(vi.into());
+            }
+            None => (),
+        }
+    }
+
     fn visit_class(&mut self, c: &horned_owl::model::Class<A>) {
         match self.hash_map.entry(c.0.underlying()) {
             Entry::Occupied(o) => {
@@ -161,6 +193,42 @@ impl<A: ForIRI> Visit<A> for ClassCollection<A> {
             AnnotationSubject::AnonymousIndividual(_) => (),
         };
     }
+
+    fn visit_ontology_annotation(&mut self, oa: &horned_owl::model::OntologyAnnotation<A>) {
+        let ann = match unpack_annotation_value(&oa.0.av) {
+            Some(vv) => {
+                let iri_string = oa.0.ap.0.to_string();
+                let label = match &self.prefix_mapping {
+                    Some(pm) => match pm.shrink_iri(&iri_string) {
+                        Ok(s) => s.into(),
+                        Err(_) => iri_string.clone(),
+                    },
+                    None => iri_string.clone(),
+                };
+                let annotation = OntologyAnnotation {
+                    iri: oa.0.ap.0.to_string(),
+                    display: label,
+                    value: vv,
+                };
+                Some(annotation)
+            }
+            None => None,
+        };
+        match ann {
+            Some(aa) => match oa.0.ap.0.underlying().as_ref() {
+                "http://purl.org/dc/elements/1.1/contributor" => {
+                    self.metadata.contributors.push(aa)
+                }
+                "http://purl.org/dc/terms/title" => self.metadata.title = Some(aa.value),
+                "http://purl.org/dc/terms/license" => self.metadata.license = Some(aa.value),
+                "http://purl.org/dc/terms/description" => {
+                    self.metadata.description = Some(aa.value)
+                }
+                _ => self.metadata.annotations.push(aa),
+            },
+            None => (),
+        }
+    }
 }
 
 fn unpack_annotation_value<A: ForIRI>(av: &AnnotationValue<A>) -> Option<String> {
@@ -191,17 +259,39 @@ impl<A: ForIRI> OntologyComponent<A> {
             None => (),
         }
         match &self.example {
-            Some(e) => context.insert("definition", &e),
+            Some(e) => context.insert("example", &e),
             None => (),
         }
-
+        match &self.kind {
+            Kind::Class => context.insert("kind", "class"),
+            Kind::ObjectProperty => context.insert("kind", "object-property"),
+            Kind::AnnotationProperty => context.insert("kind", "annotation-property"),
+            Kind::Undefined => context.insert("kind", "entity"),
+        }
         context.insert("annotations", &self.annotations);
 
         match &self.kind {
-            Kind::Class => TEMPLATES.render("base.html", &context),
-            Kind::ObjectProperty => TEMPLATES.render("base.html", &context),
-            Kind::AnnotationProperty => TEMPLATES.render("base.html", &context),
-            Kind::Undefined => TEMPLATES.render("base.html", &context),
+            Kind::Class => TEMPLATES.render("entity.html", &context),
+            Kind::ObjectProperty => TEMPLATES.render("entity.html", &context),
+            Kind::AnnotationProperty => TEMPLATES.render("entity.html", &context),
+            Kind::Undefined => TEMPLATES.render("entity.html", &context),
         }
+    }
+}
+
+impl OntologyMetadata {
+    pub fn render_html(&self) -> Result<String, tera::Error> {
+        let mut context = Context::new();
+        match &self.iri {
+            Some(i) => context.insert("iri", i),
+            None => (),
+        }
+        match &self.title {
+            Some(t) => context.insert("title", t),
+            None => (),
+        }
+        context.insert("contributors", &self.contributors);
+        context.insert("annotations", &self.annotations);
+        TEMPLATES.render("ontology.html", &context)
     }
 }
