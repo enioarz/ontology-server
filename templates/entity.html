@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+    <div class="{{ kind }}" id="{{ iri }}">
+        <h3>{{ label}}</h3>
+        <p>
+            <strong>IRI:</strong>
+            <a href="{{ iri }}">{{ iri }}</a>
+        </p>
+        {% if definition %}
+        <h4>definition</h4>
+        <div class="definition">
+            <p>{{ definition }}</p>
+        </div>
+        {% endif %} {% if example %}
+        <h4>example</h4>
+        <div class="example">
+            <p>{{ example }}</p>
+        </div>
+        {% endif %}
+        <dl class="annotations">
+            {% for ann in annotations %}
+            <dt><a href="{{ ann.iri }}">{{ ann.display }}</a></dt>
+            <dd>{{ ann.value }}</dd>
+            {% endfor %}
+        </dl>
+    </div>
+</html>

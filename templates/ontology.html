@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+    {% if iri %} {% if title %}
+    <h1>{{ title }}</h1>
+    {% endif %}
+    <div class="ontology" id="{{ iri }}">
+        <p>
+            <strong>IRI:</strong>
+            <a href="{{ iri }}">{{ iri }}</a>
+        </p>
+        {% if version %}
+        <h4>Version</h4>
+        <div class="version">
+            <p>{{ version }}</p>
+        </div>
+        {% endif %} {% if previous %}
+        <h4>Previous version</h4>
+        <div class="previous">
+            <p>{{ previous }}</p>
+        </div>
+        {% endif %}
+        <dl class="annotations">
+            {% for ann in annotations %}
+            <dt><a href="{{ ann.iri }}">{{ ann.display }}</a></dt>
+            <dd>{{ ann.value }}</dd>
+            {% endfor %}
+        </dl>
+    </div>
+    {% endif %}
+</html>
