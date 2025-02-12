@@ -11,9 +11,28 @@
         {% if version %}
         <h4>Version</h4>
         <div class="version">
-            <p>{{ version }}</p>
+            <a href="{{ version }}">{{ version }}</a>
         </div>
-        {% endif %} {% if previous %}
+        {% endif %} {% if description %}
+        <h4>Description</h4>
+        <div class="description">
+            <p>{{ description }}</p>
+        </div>
+        {% endif %} {% if license %}
+        <h4>License</h4>
+        <div class="license">
+            <p>{{ license }}</p>
+        </div>
+        {% endif %}
+        <h4>Contributors</h4>
+        <dl>
+            {% for contrib in contributors %}
+            <dd class="contributor">
+                <p>{{ contrib.value }}</p>
+            </dd>
+            {% endfor %}
+        </dl>
+        {% if previous %}
         <h4>Previous version</h4>
         <div class="previous">
             <p>{{ previous }}</p>

@@ -286,8 +286,20 @@ impl OntologyMetadata {
             Some(i) => context.insert("iri", i),
             None => (),
         }
+        match &self.version_iri {
+            Some(vi) => context.insert("version", vi),
+            None => (),
+        }
         match &self.title {
             Some(t) => context.insert("title", t),
+            None => (),
+        }
+        match &self.description {
+            Some(d) => context.insert("description", d),
+            None => (),
+        }
+        match &self.license {
+            Some(l) => context.insert("license", l),
             None => (),
         }
         context.insert("contributors", &self.contributors);
