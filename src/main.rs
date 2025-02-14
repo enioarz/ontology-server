@@ -1,23 +1,18 @@
 use horned_owl::io::owx::reader::read_with_build;
 use horned_owl::model::Build;
-use horned_owl::visitor::immutable::Walk;
-use hyper_ontology::models::OntologyContent;
+use horned_owl::ontology::iri_mapped::RcIRIMappedOntology;
+use hyper_ontology::IRIMappedRenderHTML;
 
 fn main() {
+    let build = Build::new_rc();
     let ont_s = include_str!("../ontology/bfo.owx");
-    let r = read_with_build(ont_s.as_bytes(), &Build::new_string());
+    let r = read_with_build(ont_s.as_bytes(), &build);
     assert!(r.is_ok(), "Expected ontology, got failure:{:?}", r.err());
     let (o, pm) = r.ok().unwrap();
-    let oc = OntologyContent::new_with_prefix_mapping(pm);
-    let mut walk = Walk::new(oc);
-    walk.set_ontology(&o);
-    let visit = walk.into_visit();
-    let md = &visit.metadata.render_html().unwrap();
-    let mut _hm: Vec<String> = visit
-        .into_hashmap()
-        .values()
-        .map(|x| x.render_html().unwrap())
-        .collect();
+    let mut oc: RcIRIMappedOntology = RcIRIMappedOntology::from(o);
 
-    println!("{}", md);
+    // let strng = build.iri("http://purl.obolibrary.org/obo/BFO_0000001");
+    // let html = oc.render_iri_html(strng, Some(pm)).unwrap();
+    let html = oc.render_metadata_html(Some(pm)).unwrap();
+    println!("{}", html);
 }

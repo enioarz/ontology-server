@@ -1,15 +1,11 @@
 pub mod models;
-use std::collections::HashMap;
-use std::collections::hash_map::Entry;
-
 use curie::PrefixMapping;
-use horned_owl::model::ForIRI;
-use horned_owl::{
-    model::{AnnotationSubject, AnnotationValue, Literal},
-    visitor::immutable::Visit,
-};
+use horned_owl::model::{AnnotationValue, Literal};
+use horned_owl::model::{Component, ComponentKind, ForIRI, IRI};
+use horned_owl::ontology::indexed::ForIndex;
+use horned_owl::ontology::iri_mapped::IRIMappedOntology;
 use lazy_static::lazy_static;
-use models::{Kind, OntologyAnnotation, OntologyComponent, OntologyContent, OntologyMetadata};
+use models::{Kind, OntologyAnnotation};
 use tera::Context;
 use tera::Tera;
 lazy_static! {
@@ -24,211 +20,6 @@ lazy_static! {
         tera.autoescape_on(vec![".html", ".sql"]);
         tera
     };
-}
-
-impl<A: ForIRI> OntologyComponent<A> {
-    fn new(iri: A, kind: Kind) -> Self {
-        OntologyComponent {
-            iri,
-            definition: None,
-            kind,
-            label: None,
-            example: None,
-            annotations: vec![],
-            parent: None,
-            children: vec![],
-        }
-    }
-}
-
-impl<A: ForIRI> Default for OntologyContent<A> {
-    fn default() -> Self {
-        OntologyContent {
-            metadata: OntologyMetadata::new(),
-            hash_map: HashMap::new(),
-            prefix_mapping: None,
-        }
-    }
-}
-
-impl<A: ForIRI> OntologyContent<A> {
-    pub fn new_with_prefix_mapping(pm: PrefixMapping) -> Self {
-        OntologyContent {
-            metadata: OntologyMetadata::new(),
-            hash_map: HashMap::new(),
-            prefix_mapping: Some(pm),
-        }
-    }
-}
-
-impl OntologyMetadata {
-    pub fn new() -> Self {
-        OntologyMetadata {
-            iri: None,
-            version_iri: None,
-            prev_iri: None,
-            title: None,
-            description: None,
-            license: None,
-            contributors: vec![],
-            annotations: vec![],
-        }
-    }
-}
-
-impl<A: ForIRI> OntologyContent<A> {
-    pub fn as_mut_hashmap(&mut self) -> &mut HashMap<A, OntologyComponent<A>> {
-        &mut self.hash_map
-    }
-
-    pub fn into_hashmap(self) -> HashMap<A, OntologyComponent<A>> {
-        self.hash_map
-    }
-}
-
-impl<A: ForIRI> Visit<A> for OntologyContent<A> {
-    fn visit_ontology_id(&mut self, oid: &horned_owl::model::OntologyID<A>) {
-        match &oid.iri {
-            Some(i) => {
-                self.metadata.iri = Some(i.into());
-            }
-            None => (),
-        }
-        match &oid.viri {
-            Some(vi) => {
-                self.metadata.version_iri = Some(vi.into());
-            }
-            None => (),
-        }
-    }
-
-    fn visit_class(&mut self, c: &horned_owl::model::Class<A>) {
-        match self.hash_map.entry(c.0.underlying()) {
-            Entry::Occupied(o) => {
-                let oc = o.into_mut();
-                oc.iri = c.0.underlying();
-                oc.kind = Kind::Class;
-            }
-            Entry::Vacant(v) => {
-                v.insert(OntologyComponent::new(c.0.underlying(), Kind::Class));
-            }
-        }
-    }
-
-    fn visit_annotation_property(&mut self, ap: &horned_owl::model::AnnotationProperty<A>) {
-        match self.hash_map.entry(ap.0.underlying()) {
-            Entry::Occupied(o) => {
-                let oc = o.into_mut();
-                oc.iri = ap.0.underlying();
-                oc.kind = Kind::AnnotationProperty;
-            }
-            Entry::Vacant(v) => {
-                v.insert(OntologyComponent::new(
-                    ap.0.underlying(),
-                    Kind::AnnotationProperty,
-                ));
-            }
-        }
-    }
-
-    fn visit_object_property(&mut self, op: &horned_owl::model::ObjectProperty<A>) {
-        match self.hash_map.entry(op.0.underlying()) {
-            Entry::Occupied(o) => {
-                let oc = o.into_mut();
-                oc.iri = op.0.underlying();
-                oc.kind = Kind::ObjectProperty;
-            }
-            Entry::Vacant(v) => {
-                v.insert(OntologyComponent::new(
-                    op.0.underlying(),
-                    Kind::ObjectProperty,
-                ));
-            }
-        }
-    }
-
-    fn visit_annotation_assertion(&mut self, aa: &horned_owl::model::AnnotationAssertion<A>) {
-        match &aa.subject {
-            AnnotationSubject::IRI(i) => {
-                let ontology_class = match self.hash_map.entry(i.underlying()) {
-                    Entry::Occupied(o) => {
-                        let oc = o.into_mut();
-                        oc
-                    }
-                    Entry::Vacant(v) => {
-                        v.insert(OntologyComponent::new(i.underlying(), Kind::Undefined))
-                    }
-                };
-                match aa.ann.ap.0.underlying().as_ref() {
-                    "http://www.w3.org/2000/01/rdf-schema#label" => {
-                        ontology_class.label = unpack_annotation_value(&aa.ann.av)
-                    }
-                    "http://www.w3.org/2004/02/skos/core#definition" => {
-                        ontology_class.definition = unpack_annotation_value(&aa.ann.av)
-                    }
-                    "http://www.w3.org/2004/02/skos/core#example" => {
-                        ontology_class.example = unpack_annotation_value(&aa.ann.av)
-                    }
-                    _ => match unpack_annotation_value(&aa.ann.av) {
-                        Some(vv) => {
-                            let iri_string = aa.ann.ap.0.to_string();
-                            let label = match &self.prefix_mapping {
-                                Some(pm) => match pm.shrink_iri(&iri_string) {
-                                    Ok(s) => s.into(),
-                                    Err(_) => iri_string.clone(),
-                                },
-                                None => iri_string.clone(),
-                            };
-                            let annotation = OntologyAnnotation {
-                                iri: aa.ann.ap.0.to_string(),
-                                display: label,
-                                value: vv,
-                            };
-                            ontology_class.annotations.push(annotation);
-                        }
-                        None => (),
-                    },
-                };
-            }
-            AnnotationSubject::AnonymousIndividual(_) => (),
-        };
-    }
-
-    fn visit_ontology_annotation(&mut self, oa: &horned_owl::model::OntologyAnnotation<A>) {
-        let ann = match unpack_annotation_value(&oa.0.av) {
-            Some(vv) => {
-                let iri_string = oa.0.ap.0.to_string();
-                let label = match &self.prefix_mapping {
-                    Some(pm) => match pm.shrink_iri(&iri_string) {
-                        Ok(s) => s.into(),
-                        Err(_) => iri_string.clone(),
-                    },
-                    None => iri_string.clone(),
-                };
-                let annotation = OntologyAnnotation {
-                    iri: oa.0.ap.0.to_string(),
-                    display: label,
-                    value: vv,
-                };
-                Some(annotation)
-            }
-            None => None,
-        };
-        match ann {
-            Some(aa) => match oa.0.ap.0.underlying().as_ref() {
-                "http://purl.org/dc/elements/1.1/contributor" => {
-                    self.metadata.contributors.push(aa)
-                }
-                "http://purl.org/dc/terms/title" => self.metadata.title = Some(aa.value),
-                "http://purl.org/dc/terms/license" => self.metadata.license = Some(aa.value),
-                "http://purl.org/dc/terms/description" => {
-                    self.metadata.description = Some(aa.value)
-                }
-                _ => self.metadata.annotations.push(aa),
-            },
-            None => (),
-        }
-    }
 }
 
 fn unpack_annotation_value<A: ForIRI>(av: &AnnotationValue<A>) -> Option<String> {
@@ -246,64 +37,163 @@ fn unpack_annotation_value<A: ForIRI>(av: &AnnotationValue<A>) -> Option<String>
     }
 }
 
-impl<A: ForIRI> OntologyComponent<A> {
-    pub fn render_html(&self) -> Result<String, tera::Error> {
-        let mut context = Context::new();
-        match &self.label {
-            Some(l) => context.insert("label", &l),
-            None => context.insert("label", &self.iri.as_ref()),
-        }
-        context.insert("iri", &self.iri.as_ref());
-        match &self.definition {
-            Some(d) => context.insert("definition", &d),
-            None => (),
-        }
-        match &self.example {
-            Some(e) => context.insert("example", &e),
-            None => (),
-        }
-        match &self.kind {
-            Kind::Class => context.insert("kind", "class"),
-            Kind::ObjectProperty => context.insert("kind", "object-property"),
-            Kind::AnnotationProperty => context.insert("kind", "annotation-property"),
-            Kind::Undefined => context.insert("kind", "entity"),
-        }
-        context.insert("annotations", &self.annotations);
+pub trait IRIMappedRenderHTML<A: ForIRI> {
+    fn render_iri_html(
+        &mut self,
+        _: IRI<A>,
+        _: Option<PrefixMapping>,
+    ) -> Result<String, tera::Error> {
+        Err(tera::Error::msg("Not implemented"))
+    }
 
-        match &self.kind {
+    fn render_metadata_html(&mut self, _: Option<PrefixMapping>) -> Result<String, tera::Error> {
+        Err(tera::Error::msg("Not implemented"))
+    }
+}
+
+impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A, AA> {
+    fn render_iri_html(
+        &mut self,
+        iri: IRI<A>,
+        pm: Option<PrefixMapping>,
+    ) -> Result<String, tera::Error> {
+        let mut context = Context::new();
+        let mut annotations: Vec<OntologyAnnotation> = vec![];
+        let mut this_kind: Kind = Kind::Undefined;
+        for ann_cmp in self.components_for_iri(&iri) {
+            let _ann = &ann_cmp.ann; // May add annotations later
+            let cmp = &ann_cmp.component;
+            match cmp {
+                Component::DeclareClass(dc) => {
+                    context.insert("iri", dc.0.0.as_ref());
+                    this_kind = Kind::Class;
+                    context.insert("kind", "class")
+                }
+                Component::DeclareObjectProperty(op) => {
+                    context.insert("iri", op.0.0.as_ref());
+                    this_kind = Kind::ObjectProperty;
+                    context.insert("kind", "object-property")
+                }
+                Component::DeclareAnnotationProperty(ap) => {
+                    context.insert("iri", ap.0.0.as_ref());
+                    this_kind = Kind::AnnotationProperty;
+                    context.insert("kind", "annotation-property")
+                }
+                Component::AnnotationAssertion(aa) => match aa.ann.ap.0.as_ref() {
+                    "http://www.w3.org/2000/01/rdf-schema#label" => context.insert(
+                        "label",
+                        get_annotation_value(&aa.ann.av).unwrap_or(iri.as_ref()),
+                    ),
+                    "http://www.w3.org/2004/02/skos/core#definition" => context.insert(
+                        "definition",
+                        get_annotation_value(&aa.ann.av).unwrap_or(iri.as_ref()),
+                    ),
+                    "http://www.w3.org/2004/02/skos/core#example" => context.insert(
+                        "example",
+                        get_annotation_value(&aa.ann.av).unwrap_or(iri.as_ref()),
+                    ),
+                    _ => match unpack_annotation_value(&aa.ann.av) {
+                        Some(vv) => {
+                            let label = match &pm {
+                                Some(ppm) => match ppm.shrink_iri(aa.ann.ap.0.as_ref()) {
+                                    Ok(s) => s.into(),
+                                    Err(_) => aa.ann.ap.0.to_string(),
+                                },
+                                None => aa.ann.ap.0.to_string(),
+                            };
+                            let annotation = OntologyAnnotation {
+                                iri: aa.ann.ap.0.to_string(),
+                                display: label,
+                                value: vv,
+                            };
+                            annotations.push(annotation);
+                        }
+                        None => (),
+                    },
+                },
+                _ => (),
+            }
+        }
+        context.insert("annotations", &annotations);
+        match this_kind {
             Kind::Class => TEMPLATES.render("entity.html", &context),
             Kind::ObjectProperty => TEMPLATES.render("entity.html", &context),
             Kind::AnnotationProperty => TEMPLATES.render("entity.html", &context),
             Kind::Undefined => TEMPLATES.render("entity.html", &context),
         }
     }
+    fn render_metadata_html(&mut self, pm: Option<PrefixMapping>) -> Result<String, tera::Error> {
+        let mut context = Context::default();
+        let mut contributors: Vec<OntologyAnnotation> = vec![];
+        let mut annotations: Vec<OntologyAnnotation> = vec![];
+        for oid in self.component_for_kind(ComponentKind::OntologyID) {
+            match &oid.component {
+                Component::OntologyID(oi) => {
+                    match &oi.viri {
+                        Some(i) => context.insert("version", i.as_ref()),
+                        None => (),
+                    }
+                    match &oi.iri {
+                        Some(i) => context.insert("iri", i.as_ref()),
+                        None => (),
+                    }
+                }
+                _ => (),
+            }
+        }
+        for oann in self.component_for_kind(ComponentKind::OntologyAnnotation) {
+            if let Component::OntologyAnnotation(oa) = &oann.component {
+                let ann = match unpack_annotation_value(&oa.0.av) {
+                    Some(vv) => {
+                        let iri_string = oa.0.ap.0.to_string();
+                        let label = match &pm {
+                            Some(pm) => match pm.shrink_iri(&iri_string) {
+                                Ok(s) => s.into(),
+                                Err(_) => iri_string.clone(),
+                            },
+                            None => iri_string.clone(),
+                        };
+                        let annotation = OntologyAnnotation {
+                            iri: oa.0.ap.0.to_string(),
+                            display: label,
+                            value: vv,
+                        };
+                        Some(annotation)
+                    }
+                    None => None,
+                };
+                match ann {
+                    Some(aa) => match oa.0.ap.0.underlying().as_ref() {
+                        "http://purl.org/dc/elements/1.1/contributor" => contributors.push(aa),
+                        "http://purl.org/dc/terms/title" => context.insert("title", &aa.value),
+                        "http://purl.org/dc/terms/license" => context.insert("license", &aa.value),
+                        "http://purl.org/dc/terms/description" => {
+                            context.insert("description", &aa.value)
+                        }
+                        _ => annotations.push(aa),
+                    },
+                    None => (),
+                }
+            } else {
+            }
+        }
+        context.insert("annotations", &annotations);
+        context.insert("contributors", &contributors);
+        TEMPLATES.render("ontology.html", &context)
+    }
 }
 
-impl OntologyMetadata {
-    pub fn render_html(&self) -> Result<String, tera::Error> {
-        let mut context = Context::new();
-        match &self.iri {
-            Some(i) => context.insert("iri", i),
-            None => (),
-        }
-        match &self.version_iri {
-            Some(vi) => context.insert("version", vi),
-            None => (),
-        }
-        match &self.title {
-            Some(t) => context.insert("title", t),
-            None => (),
-        }
-        match &self.description {
-            Some(d) => context.insert("description", d),
-            None => (),
-        }
-        match &self.license {
-            Some(l) => context.insert("license", l),
-            None => (),
-        }
-        context.insert("contributors", &self.contributors);
-        context.insert("annotations", &self.annotations);
-        TEMPLATES.render("ontology.html", &context)
+fn get_annotation_value<A: ForIRI>(av: &AnnotationValue<A>) -> Option<&str> {
+    match &av {
+        AnnotationValue::AnonymousIndividual(_) => None,
+        AnnotationValue::Literal(l) => match l {
+            Literal::Simple { literal } => Some(literal),
+            Literal::Language { literal, lang: _ } => Some(literal),
+            Literal::Datatype {
+                literal,
+                datatype_iri: _,
+            } => Some(literal),
+        },
+        AnnotationValue::IRI(ii) => Some(ii),
     }
 }
