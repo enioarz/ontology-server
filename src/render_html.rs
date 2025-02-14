@@ -60,6 +60,13 @@ pub trait IRIMappedRenderHTML<A: ForIRI> {
     ) -> Result<String, tera::Error> {
         Err(tera::Error::msg("Not implemented"))
     }
+
+    fn render_all_declarations_html(
+        &mut self,
+        _: Option<PrefixMapping>,
+    ) -> Result<Vec<String>, tera::Error> {
+        Err(tera::Error::msg("Not implemented"))
+    }
     fn render_metadata_html(&mut self, _: Option<PrefixMapping>) -> Result<String, tera::Error> {
         Err(tera::Error::msg("Not implemented"))
     }
@@ -136,6 +143,29 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
             Kind::Undefined => Err(tera::Error::msg("Not implemented")),
         }
     }
+
+    fn render_all_declarations_html(
+        &mut self,
+        _: Option<PrefixMapping>,
+    ) -> Result<Vec<String>, tera::Error> {
+        let classes: Vec<IRI<_>> = self
+            .component_for_kind(horned_owl::model::ComponentKind::DeclareClass)
+            .map(|dc| {
+                if let horned_owl::model::Component::DeclareClass(ddc) = &dc.component {
+                    Some(ddc.0.0.clone())
+                } else {
+                    None
+                }
+            })
+            .filter(|x| match x {
+                Some(_) => true,
+                None => false,
+            })
+            .map(|y| y.unwrap())
+            .collect();
+        Err(tera::Error::msg("Not implemented"))
+    }
+
     fn render_metadata_html(&mut self, pm: Option<PrefixMapping>) -> Result<String, tera::Error> {
         let mut context = Context::default();
         let mut contributors: Vec<OntologyAnnotation> = vec![];
