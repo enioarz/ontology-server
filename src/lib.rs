@@ -145,13 +145,12 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
             if let Component::OntologyAnnotation(oa) = &oann.component {
                 let ann = match unpack_annotation_value(&oa.0.av) {
                     Some(vv) => {
-                        let iri_string = oa.0.ap.0.to_string();
                         let label = match &pm {
-                            Some(pm) => match pm.shrink_iri(&iri_string) {
+                            Some(pm) => match pm.shrink_iri(oa.0.ap.0.as_ref()) {
                                 Ok(s) => s.into(),
-                                Err(_) => iri_string.clone(),
+                                Err(_) => oa.0.ap.0.to_string(),
                             },
-                            None => iri_string.clone(),
+                            None => oa.0.ap.0.to_string(),
                         };
                         let annotation = OntologyAnnotation {
                             iri: oa.0.ap.0.to_string(),
