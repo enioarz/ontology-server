@@ -1,6 +1,6 @@
-use serde::Deserialize;
+use serde::Serialize;
 
-#[derive(Deserialize)]
+#[derive(Serialize)]
 pub enum Kind {
     Class,
     ObjectProperty,
@@ -8,7 +8,7 @@ pub enum Kind {
     Undefined,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize)]
 pub struct OntologyAnnotation {
     pub iri: String,
     pub display: String,
