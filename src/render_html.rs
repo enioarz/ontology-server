@@ -53,21 +53,20 @@ fn unpack_annotation_value<A: ForIRI>(av: &AnnotationValue<A>) -> Option<String>
 }
 
 pub trait IRIMappedRenderHTML<A: ForIRI> {
-    fn render_iri_html(
+    fn render_declaration_iri_html(
         &mut self,
         _: IRI<A>,
         _: Option<&PrefixMapping>,
     ) -> Result<String, tera::Error> {
         Err(tera::Error::msg("Not implemented"))
     }
-
     fn render_metadata_html(&mut self, _: Option<PrefixMapping>) -> Result<String, tera::Error> {
         Err(tera::Error::msg("Not implemented"))
     }
 }
 
 impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A, AA> {
-    fn render_iri_html(
+    fn render_declaration_iri_html(
         &mut self,
         iri: IRI<A>,
         pm: Option<&PrefixMapping>,
@@ -134,7 +133,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
             Kind::Class => TEMPLATES.render("entity.html", &context),
             Kind::ObjectProperty => TEMPLATES.render("entity.html", &context),
             Kind::AnnotationProperty => TEMPLATES.render("entity.html", &context),
-            Kind::Undefined => TEMPLATES.render("entity.html", &context),
+            Kind::Undefined => Err(tera::Error::msg("Not implemented")),
         }
     }
     fn render_metadata_html(&mut self, pm: Option<PrefixMapping>) -> Result<String, tera::Error> {

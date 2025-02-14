@@ -26,7 +26,7 @@ fn main() {
         .map(|y| y.unwrap())
         .collect();
     for c in classes.into_iter() {
-        let html = oc.render_iri_html(c, Some(&pm)).unwrap();
+        let html = oc.render_declaration_iri_html(c, Some(&pm)).unwrap();
         println!("{}", html);
     }
     // let strng = build.iri("http://purl.obolibrary.org/obo/BFO_0000001");
