@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use std::collections::hash_map::Entry;
+
 use curie::PrefixMapping;
 use horned_owl::model::{AnnotationValue, Literal};
 use horned_owl::model::{Component, ComponentKind, ForIRI, IRI};
@@ -55,7 +58,7 @@ fn unpack_annotation_value<A: ForIRI>(av: &AnnotationValue<A>) -> Option<String>
 pub trait IRIMappedRenderHTML<A: ForIRI> {
     fn render_declaration_iri_html(
         &mut self,
-        _: IRI<A>,
+        _: &IRI<A>,
         _: Option<&PrefixMapping>,
     ) -> Result<String, tera::Error> {
         Err(tera::Error::msg("Not implemented"))
@@ -63,19 +66,23 @@ pub trait IRIMappedRenderHTML<A: ForIRI> {
 
     fn render_all_declarations_html(
         &mut self,
-        _: Option<PrefixMapping>,
-    ) -> Result<Vec<String>, tera::Error> {
+        _: Option<&PrefixMapping>,
+    ) -> Result<HashMap<IRI<A>, String>, tera::Error> {
         Err(tera::Error::msg("Not implemented"))
     }
     fn render_metadata_html(&mut self, _: Option<PrefixMapping>) -> Result<String, tera::Error> {
         Err(tera::Error::msg("Not implemented"))
+    }
+
+    fn get_iris_for_declaration(&mut self, _: ComponentKind) -> Vec<IRI<A>> {
+        vec![]
     }
 }
 
 impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A, AA> {
     fn render_declaration_iri_html(
         &mut self,
-        iri: IRI<A>,
+        iri: &IRI<A>,
         pm: Option<&PrefixMapping>,
     ) -> Result<String, tera::Error> {
         let mut context = Context::new();
@@ -146,26 +153,64 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
 
     fn render_all_declarations_html(
         &mut self,
-        _: Option<PrefixMapping>,
-    ) -> Result<Vec<String>, tera::Error> {
-        let classes: Vec<IRI<_>> = self
-            .component_for_kind(horned_owl::model::ComponentKind::DeclareClass)
-            .map(|dc| {
-                if let horned_owl::model::Component::DeclareClass(ddc) = &dc.component {
-                    Some(ddc.0.0.clone())
-                } else {
-                    None
+        pm: Option<&PrefixMapping>,
+    ) -> Result<HashMap<IRI<A>, String>, tera::Error> {
+        let mut declaration_hm: HashMap<IRI<A>, String> = HashMap::new();
+        for cl in self.get_iris_for_declaration(ComponentKind::DeclareClass) {
+            let rendered_page = self.render_declaration_iri_html(&cl, pm)?;
+            match declaration_hm.entry(cl) {
+                Entry::Occupied(o) => println!("{:?}", o),
+                Entry::Vacant(v) => {
+                    v.insert(rendered_page);
                 }
+            }
+        }
+        for dp in self.get_iris_for_declaration(ComponentKind::DeclareDataProperty) {
+            let rendered_page = self.render_declaration_iri_html(&dp, pm)?;
+            match declaration_hm.entry(dp) {
+                Entry::Occupied(o) => println!("{:?}", o),
+                Entry::Vacant(v) => {
+                    v.insert(rendered_page);
+                }
+            }
+        }
+        for op in self.get_iris_for_declaration(ComponentKind::DeclareObjectProperty) {
+            let rendered_page = self.render_declaration_iri_html(&op, pm)?;
+            match declaration_hm.entry(op) {
+                Entry::Occupied(o) => println!("{:?}", o),
+                Entry::Vacant(v) => {
+                    v.insert(rendered_page);
+                }
+            }
+        }
+        for ap in self.get_iris_for_declaration(ComponentKind::DeclareAnnotationProperty) {
+            let rendered_page = self.render_declaration_iri_html(&ap, pm)?;
+            match declaration_hm.entry(ap) {
+                Entry::Occupied(o) => println!("{:?}", o),
+                Entry::Vacant(v) => {
+                    v.insert(rendered_page);
+                }
+            }
+        }
+        Ok(declaration_hm)
+    }
+
+    fn get_iris_for_declaration(&mut self, component_kind: ComponentKind) -> Vec<IRI<A>> {
+        self.component_for_kind(component_kind)
+            .map(|dc| match &dc.component {
+                Component::DeclareClass(dc) => Some(dc.0.0.clone()),
+                Component::DeclareDataProperty(ddp) => Some(ddp.0.0.clone()),
+                Component::DeclareObjectProperty(dop) => Some(dop.0.0.clone()),
+                Component::DeclareAnnotationProperty(dap) => Some(dap.0.0.clone()),
+                _ => None,
             })
             .filter(|x| match x {
                 Some(_) => true,
                 None => false,
             })
             .map(|y| y.unwrap())
-            .collect();
-        Err(tera::Error::msg("Not implemented"))
+            .collect()
     }
-
     fn render_metadata_html(&mut self, pm: Option<PrefixMapping>) -> Result<String, tera::Error> {
         let mut context = Context::default();
         let mut contributors: Vec<OntologyAnnotation> = vec![];

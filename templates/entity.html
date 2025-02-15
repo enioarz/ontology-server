@@ -1,7 +1,11 @@
 <!doctype html>
 <html>
     <div class="{{ kind }}" id="{{ iri }}">
+        {% if label %}
         <h3>{{ label}}</h3>
+        {% else %}
+        <h3>{{ iri }}</h3>
+        {% endif %}
         <p>
             <strong>IRI:</strong>
             <a href="{{ iri }}">{{ iri }}</a>
