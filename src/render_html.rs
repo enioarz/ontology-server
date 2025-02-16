@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
+use std::fmt;
 
 use curie::PrefixMapping;
-use horned_owl::model::{AnnotationValue, Literal};
+use horned_owl::model::{AnnotationValue, ClassExpression, Literal};
 use horned_owl::model::{Component, ComponentKind, ForIRI, IRI};
 use horned_owl::ontology::indexed::ForIndex;
 use horned_owl::ontology::iri_mapped::IRIMappedOntology;
@@ -10,6 +11,17 @@ use lazy_static::lazy_static;
 use serde::Serialize;
 use tera::Context;
 use tera::Tera;
+use tree_ds::prelude::Result as TDResult;
+use tree_ds::prelude::{Node, NodeRemovalStrategy, Tree};
+
+#[derive(Debug, Clone)]
+struct RenderError(String);
+
+impl fmt::Display for RenderError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 #[derive(Serialize)]
 enum Kind {
@@ -76,6 +88,10 @@ pub trait IRIMappedRenderHTML<A: ForIRI> {
 
     fn get_iris_for_declaration(&mut self, _: ComponentKind) -> Vec<IRI<A>> {
         vec![]
+    }
+
+    fn render_tree_html(&mut self, _: Option<IRI<A>>) -> Result<String, RenderError> {
+        Err(RenderError("Error when rendering tree".into()))
     }
 }
 
@@ -268,6 +284,34 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
         context.insert("annotations", &annotations);
         context.insert("contributors", &contributors);
         TEMPLATES.render("ontology.html", &context)
+    }
+
+    fn render_tree_html(&mut self, upper_term: Option<IRI<A>>) -> Result<String, RenderError> {
+        let mut tree: Tree<String, String> = Tree::new("render_tree".into());
+        let root = match tree.add_node(Node::new("root".to_string(), Some("entity".into())), None) {
+            Ok(r) => r,
+            Err(_) => return Err(RenderError("Could not initialize root".into())),
+        };
+        for sco in self.component_for_kind(ComponentKind::SubClassOf) {
+            match &sco.component {
+                Component::SubClassOf(sc) => {
+                    if let ClassExpression::Class(c) = &sc.sup {
+                        if let ClassExpression::Class(d) = &sc.sub {
+                            match tree.get_node_by_id(&c.0.to_string()) {
+                                Some(n) => (),
+                                // (tree.add_node(
+                                //     Node::new(d.0.to_string(), Some(d.0.to_string())),
+                                //     n.get_node_id(),
+                                // ),),
+                                None => (),
+                            };
+                        }
+                    }
+                }
+                _ => (),
+            }
+        }
+        Err(RenderError("Not implemented".into()))
     }
 }
 
