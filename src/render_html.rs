@@ -3,7 +3,7 @@ use std::collections::hash_map::Entry;
 use std::fmt;
 
 use curie::PrefixMapping;
-use horned_owl::model::{AnnotationValue, ClassExpression, Literal};
+use horned_owl::model::{AnnotationSubject, AnnotationValue, ClassExpression, Literal};
 use horned_owl::model::{Component, ComponentKind, ForIRI, IRI};
 use horned_owl::ontology::indexed::ForIndex;
 use horned_owl::ontology::iri_mapped::IRIMappedOntology;
@@ -11,11 +11,9 @@ use lazy_static::lazy_static;
 use serde::Serialize;
 use tera::Context;
 use tera::Tera;
-use tree_ds::prelude::Result as TDResult;
-use tree_ds::prelude::{Node, NodeRemovalStrategy, Tree};
 
 #[derive(Debug, Clone)]
-struct RenderError(String);
+pub struct RenderError(String);
 
 impl fmt::Display for RenderError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -36,6 +34,11 @@ struct OntologyAnnotation {
     iri: String,
     display: String,
     value: String,
+}
+
+struct EntityRepr {
+    iri: String,
+    display: String,
 }
 
 lazy_static! {
@@ -90,6 +93,9 @@ pub trait IRIMappedRenderHTML<A: ForIRI> {
         vec![]
     }
 
+    fn get_label_hashmap(&mut self) -> HashMap<IRI<A>, String> {
+        HashMap::new()
+    }
     fn render_tree_html(&mut self, _: Option<IRI<A>>) -> Result<String, RenderError> {
         Err(RenderError("Error when rendering tree".into()))
     }
@@ -227,6 +233,30 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
             .map(|y| y.unwrap())
             .collect()
     }
+
+    fn get_label_hashmap(&mut self) -> HashMap<IRI<A>, String> {
+        let mut label_map: HashMap<IRI<A>, String> = HashMap::new();
+
+        for aa in self.component_for_kind(ComponentKind::AnnotationAssertion) {
+            match &aa.component {
+                Component::AnnotationAssertion(aas) => match &aas.subject {
+                    AnnotationSubject::IRI(iri) => match aas.ann.ap.0.as_ref() {
+                        "http://www.w3.org/2000/01/rdf-schema#label" => match &aas.ann.av {
+                            AnnotationValue::Literal(literal) => {
+                                label_map.insert(iri.clone(), literal.literal().clone());
+                            }
+                            _ => (),
+                        },
+                        _ => (),
+                    },
+                    AnnotationSubject::AnonymousIndividual(_) => (),
+                },
+                _ => (),
+            }
+        }
+
+        label_map
+    }
     fn render_metadata_html(&mut self, pm: Option<PrefixMapping>) -> Result<String, tera::Error> {
         let mut context = Context::default();
         let mut contributors: Vec<OntologyAnnotation> = vec![];
@@ -287,25 +317,11 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
     }
 
     fn render_tree_html(&mut self, upper_term: Option<IRI<A>>) -> Result<String, RenderError> {
-        let mut tree: Tree<String, String> = Tree::new("render_tree".into());
-        let root = match tree.add_node(Node::new("root".to_string(), Some("entity".into())), None) {
-            Ok(r) => r,
-            Err(_) => return Err(RenderError("Could not initialize root".into())),
-        };
         for sco in self.component_for_kind(ComponentKind::SubClassOf) {
             match &sco.component {
                 Component::SubClassOf(sc) => {
                     if let ClassExpression::Class(c) = &sc.sup {
-                        if let ClassExpression::Class(d) = &sc.sub {
-                            match tree.get_node_by_id(&c.0.to_string()) {
-                                Some(n) => (),
-                                // (tree.add_node(
-                                //     Node::new(d.0.to_string(), Some(d.0.to_string())),
-                                //     n.get_node_id(),
-                                // ),),
-                                None => (),
-                            };
-                        }
+                        if let ClassExpression::Class(d) = &sc.sub {}
                     }
                 }
                 _ => (),
