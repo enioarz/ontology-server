@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::fmt;
+use std::ops::ControlFlow;
 
 use curie::PrefixMapping;
 use horned_owl::model::{AnnotationSubject, AnnotationValue, ClassExpression, Literal};
@@ -36,9 +37,35 @@ struct OntologyAnnotation {
     value: String,
 }
 
-struct EntityRepr {
+#[derive(Serialize, Debug)]
+struct EntityDisplay {
     iri: String,
     display: String,
+}
+
+impl EntityDisplay {
+    fn new(iri: String, display: String) -> Self {
+        EntityDisplay { iri, display }
+    }
+}
+
+#[derive(Serialize, Debug)]
+pub struct SideBar {
+    classes: Vec<EntityDisplay>,
+    annotation_props: Vec<EntityDisplay>,
+    data_props: Vec<EntityDisplay>,
+    object_props: Vec<EntityDisplay>,
+}
+
+impl Default for SideBar {
+    fn default() -> Self {
+        SideBar {
+            classes: vec![],
+            annotation_props: vec![],
+            data_props: vec![],
+            object_props: vec![],
+        }
+    }
 }
 
 lazy_static! {
@@ -96,7 +123,7 @@ pub trait IRIMappedRenderHTML<A: ForIRI> {
     fn get_label_hashmap(&mut self) -> HashMap<IRI<A>, String> {
         HashMap::new()
     }
-    fn render_tree_html(&mut self, _: Option<IRI<A>>) -> Result<String, RenderError> {
+    fn render_sidebar_html(&mut self) -> Result<SideBar, RenderError> {
         Err(RenderError("Error when rendering tree".into()))
     }
 }
@@ -311,23 +338,78 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
             } else {
             }
         }
+        let side_bar = match self.render_sidebar_html() {
+            Ok(sb) => sb,
+            Err(e) => {
+                return Err(tera::Error::msg(format!(
+                    "Failed to render sidebar, context: {}",
+                    e
+                )));
+            }
+        };
+        context.insert("sidebar", &side_bar);
         context.insert("annotations", &annotations);
         context.insert("contributors", &contributors);
         TEMPLATES.render("ontology.html", &context)
     }
 
-    fn render_tree_html(&mut self, upper_term: Option<IRI<A>>) -> Result<String, RenderError> {
-        for sco in self.component_for_kind(ComponentKind::SubClassOf) {
+    fn render_sidebar_html(&mut self) -> Result<SideBar, RenderError> {
+        let labels: HashMap<IRI<A>, String> = self.get_label_hashmap();
+        let mut side_bar = SideBar::default();
+        for sco in self.component_for_kind(ComponentKind::DeclareClass) {
             match &sco.component {
-                Component::SubClassOf(sc) => {
-                    if let ClassExpression::Class(c) = &sc.sup {
-                        if let ClassExpression::Class(d) = &sc.sub {}
-                    }
+                Component::DeclareClass(dc) => {
+                    let class_iri = &dc.0.0;
+                    let iri_string = class_iri.to_string();
+                    let class_label = labels.get(class_iri).unwrap_or(&iri_string).clone();
+                    side_bar
+                        .classes
+                        .push(EntityDisplay::new(iri_string, class_label))
                 }
                 _ => (),
             }
         }
-        Err(RenderError("Not implemented".into()))
+        for sco in self.component_for_kind(ComponentKind::DeclareObjectProperty) {
+            match &sco.component {
+                Component::DeclareObjectProperty(op) => {
+                    let class_iri = &op.0.0;
+                    let iri_string = class_iri.to_string();
+                    let class_label = labels.get(class_iri).unwrap_or(&iri_string).clone();
+                    side_bar
+                        .object_props
+                        .push(EntityDisplay::new(iri_string, class_label))
+                }
+                _ => (),
+            }
+        }
+        for sco in self.component_for_kind(ComponentKind::DeclareAnnotationProperty) {
+            match &sco.component {
+                Component::DeclareAnnotationProperty(ap) => {
+                    let class_iri = &ap.0.0;
+                    let iri_string = class_iri.to_string();
+                    let class_label = labels.get(class_iri).unwrap_or(&iri_string).clone();
+                    side_bar
+                        .annotation_props
+                        .push(EntityDisplay::new(iri_string, class_label))
+                }
+                _ => (),
+            }
+        }
+
+        for sco in self.component_for_kind(ComponentKind::DeclareDataProperty) {
+            match &sco.component {
+                Component::DeclareDataProperty(dp) => {
+                    let class_iri = &dp.0.0;
+                    let iri_string = class_iri.to_string();
+                    let class_label = labels.get(class_iri).unwrap_or(&iri_string).clone();
+                    side_bar
+                        .data_props
+                        .push(EntityDisplay::new(iri_string, class_label))
+                }
+                _ => (),
+            }
+        }
+        Ok(side_bar)
     }
 }
 

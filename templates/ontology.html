@@ -45,5 +45,42 @@
             {% endfor %}
         </dl>
     </div>
+    {% endif %} {% if sidebar %}
+    <div id="side-nav">
+        <ul id="entities-sidebar">
+            <li>
+                <span class="caret">Classes</span>
+                <ul class="nested">
+                    {% for cls in sidebar.classes %}
+                    <li><a href="{{ cls.iri }}">{{ cls.display }}</a></li>
+                    {% endfor %}
+                </ul>
+            </li>
+            <li>
+                <span class="caret">Object Properties</span>
+                <ul class="nested">
+                    {% for op in sidebar.object_props %}
+                    <li><a href="{{ op.iri }}">{{ op.display }}</a></li>
+                    {% endfor %}
+                </ul>
+            </li>
+            <li>
+                <span class="caret">Annotation Properties</span>
+                <ul class="nested">
+                    {% for ap in sidebar.annotation_props %}
+                    <li><a href="{{ ap.iri }}">{{ ap.display }}</a></li>
+                    {% endfor %}
+                </ul>
+            </li>
+            <li>
+                <span class="caret">Data Properties</span>
+                <ul class="nested">
+                    {% for dp in sidebar.data_props %}
+                    <li><a href="{{ dp.iri }}">{{ dp.display }}</a></li>
+                    {% endfor %}
+                </ul>
+            </li>
+        </ul>
+    </div>
     {% endif %}
 </html>

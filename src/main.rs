@@ -13,6 +13,7 @@ fn main() {
     let mut oc: ArcIRIMappedOntology = ArcIRIMappedOntology::from(o);
     pm.add_prefix("bfo", "http://purl.obolibrary.org/obo/")
         .unwrap();
+    oc.render_sidebar_html();
     let hm = oc.render_all_declarations_html(Some(&pm)).unwrap();
     fs::create_dir_all("public/BFO").unwrap_or(println!("Folder already exist"));
     for (k, v) in hm.iter() {
