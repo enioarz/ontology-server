@@ -4,11 +4,13 @@ use horned_owl::io::owx::reader::read_with_build;
 use horned_owl::model::Build;
 use horned_owl::ontology::iri_mapped::ArcIRIMappedOntology;
 use hyper_ontology::render_html::IRIMappedRenderHTML;
+use std::env;
 use std::fs;
+use std::fs::File;
+use std::io::BufReader;
 use std::path::Path;
 
 fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
-    dotenv()?;
     fs::create_dir_all(&dst)?;
     for entry in fs::read_dir(src)? {
         let entry = entry?;
@@ -23,16 +25,22 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
 }
 
 fn main() -> Result<()> {
+    dotenv()?;
+    let base_url = env::var("BASE_URL")?;
+    let ontology_iri = env::var("ONTOLOGY_IRI")?;
+    let suff = env::var("ONTOLOGY_SUFFIX")?;
+    let dir = env::var("ONTOLOGY_DIR")?;
     let build = Build::new_arc();
-    let ont_s = include_str!("../ontology/bfo.owx");
-    let r = read_with_build(ont_s.as_bytes(), &build);
+    let f = File::open(dir)?;
+    let reader = BufReader::new(f);
+    let r = read_with_build(reader, &build);
     assert!(r.is_ok(), "Expected ontology, got failure:{:?}", r.err());
     let (o, mut pm) = r.ok().unwrap();
     let mut oc: ArcIRIMappedOntology = ArcIRIMappedOntology::from(o);
-    pm.add_prefix("bfo", "http://purl.obolibrary.org/obo/")
-        .unwrap();
+    pm.add_prefix("original", &ontology_iri).unwrap();
+    pm.add_prefix("live", &base_url).unwrap();
     let hm = oc.render_all_declarations_html(Some(&pm))?;
-    fs::create_dir_all("public/BFO").unwrap_or(println!("Folder already exist"));
+    fs::create_dir_all(format!("public/{}", suff)).unwrap_or(println!("Folder already exist"));
     for (k, v) in hm.iter() {
         match pm.shrink_iri(k) {
             Ok(i) => {
@@ -41,7 +49,7 @@ fn main() -> Result<()> {
                 let prefix = &iri_parts[0];
                 match prefix.as_str() {
                     "bfo" => {
-                        fs::write(format!("public/BFO/{}.html", &iri_parts[1]), v).unwrap();
+                        fs::write(format!("public/{}/{}.html", suff, &iri_parts[1]), v).unwrap();
                     }
                     _ => (),
                 }
