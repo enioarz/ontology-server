@@ -2,3 +2,4 @@
 Cargo.lock
 ontology/
 .DS_Store
+.env
