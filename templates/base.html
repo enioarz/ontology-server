@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        {% block head %}
+        <link rel="stylesheet" href="static/styles/base.css" />
+        <title>{% block title %}{% endblock title %} - Ontology</title>
+        {% endblock head %}
+    </head>
+    <body>
+        <div id="content">{% block content %}{% endblock content %}</div>
+        <div id="footer">
+            {% block footer %} &copy; Copyright 2025 by
+            <a href="http://domain.invalid/">Eugenio Arellano</a>. {% endblock
+            footer %}
+        </div>
+    </body>
+</html>

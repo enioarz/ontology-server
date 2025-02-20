@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::fmt;
-use std::ops::ControlFlow;
 
 use curie::PrefixMapping;
-use horned_owl::model::{AnnotationSubject, AnnotationValue, ClassExpression, Literal};
+use eyre::Result;
+use horned_owl::model::{AnnotationSubject, AnnotationValue, Literal};
 use horned_owl::model::{Component, ComponentKind, ForIRI, IRI};
 use horned_owl::ontology::indexed::ForIndex;
 use horned_owl::ontology::iri_mapped::IRIMappedOntology;
@@ -109,11 +109,11 @@ pub trait IRIMappedRenderHTML<A: ForIRI> {
     fn render_all_declarations_html(
         &mut self,
         _: Option<&PrefixMapping>,
-    ) -> Result<HashMap<IRI<A>, String>, tera::Error> {
-        Err(tera::Error::msg("Not implemented"))
+    ) -> Result<HashMap<IRI<A>, String>> {
+        Err(eyre::Report::msg("Not implemented"))
     }
-    fn render_metadata_html(&mut self, _: Option<PrefixMapping>) -> Result<String, tera::Error> {
-        Err(tera::Error::msg("Not implemented"))
+    fn render_metadata_html(&mut self, _: Option<PrefixMapping>) -> Result<String> {
+        Err(eyre::Report::msg("Not implemented"))
     }
 
     fn get_iris_for_declaration(&mut self, _: ComponentKind) -> Vec<IRI<A>> {
@@ -123,8 +123,8 @@ pub trait IRIMappedRenderHTML<A: ForIRI> {
     fn get_label_hashmap(&mut self) -> HashMap<IRI<A>, String> {
         HashMap::new()
     }
-    fn render_sidebar_html(&mut self) -> Result<SideBar, RenderError> {
-        Err(RenderError("Error when rendering tree".into()))
+    fn collect_entity_tree(&mut self) -> Result<SideBar> {
+        Err(eyre::Report::msg("Error when rendering tree"))
     }
 }
 
@@ -203,7 +203,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
     fn render_all_declarations_html(
         &mut self,
         pm: Option<&PrefixMapping>,
-    ) -> Result<HashMap<IRI<A>, String>, tera::Error> {
+    ) -> Result<HashMap<IRI<A>, String>> {
         let mut declaration_hm: HashMap<IRI<A>, String> = HashMap::new();
         for cl in self.get_iris_for_declaration(ComponentKind::DeclareClass) {
             let rendered_page = self.render_declaration_iri_html(&cl, pm)?;
@@ -284,7 +284,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
 
         label_map
     }
-    fn render_metadata_html(&mut self, pm: Option<PrefixMapping>) -> Result<String, tera::Error> {
+    fn render_metadata_html(&mut self, pm: Option<PrefixMapping>) -> Result<String> {
         let mut context = Context::default();
         let mut contributors: Vec<OntologyAnnotation> = vec![];
         let mut annotations: Vec<OntologyAnnotation> = vec![];
@@ -338,22 +338,22 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
             } else {
             }
         }
-        let side_bar = match self.render_sidebar_html() {
+        let entity_tree = match self.collect_entity_tree() {
             Ok(sb) => sb,
             Err(e) => {
-                return Err(tera::Error::msg(format!(
-                    "Failed to render sidebar, context: {}",
+                return Err(eyre::Report::msg(format!(
+                    "Failed to collect entities for sidebar, context: {}",
                     e
                 )));
             }
         };
-        context.insert("sidebar", &side_bar);
+        context.insert("sidebar", &entity_tree);
         context.insert("annotations", &annotations);
         context.insert("contributors", &contributors);
-        TEMPLATES.render("ontology.html", &context)
+        Ok(TEMPLATES.render("ontology.html", &context)?)
     }
 
-    fn render_sidebar_html(&mut self) -> Result<SideBar, RenderError> {
+    fn collect_entity_tree(&mut self) -> Result<SideBar> {
         let labels: HashMap<IRI<A>, String> = self.get_label_hashmap();
         let mut side_bar = SideBar::default();
         for sco in self.component_for_kind(ComponentKind::DeclareClass) {

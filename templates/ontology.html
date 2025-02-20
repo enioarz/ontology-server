@@ -1,86 +1,90 @@
-<!doctype html>
-<html>
-    {% if iri %} {% if title %}
-    <h1>{{ title }}</h1>
-    {% endif %}
-    <div class="ontology" id="{{ iri }}">
-        <p>
-            <strong>IRI:</strong>
-            <a href="{{ iri }}">{{ iri }}</a>
-        </p>
-        {% if version %}
-        <h4>Version</h4>
-        <div class="version">
-            <a href="{{ version }}">{{ version }}</a>
-        </div>
-        {% endif %} {% if description %}
-        <h4>Description</h4>
-        <div class="description">
-            <p>{{ description }}</p>
-        </div>
-        {% endif %} {% if license %}
-        <h4>License</h4>
-        <div class="license">
-            <p>{{ license }}</p>
-        </div>
-        {% endif %}
-        <h4>Contributors</h4>
-        <dl>
-            {% for contrib in contributors %}
-            <dd class="contributor">
-                <p>{{ contrib.value }}</p>
-            </dd>
-            {% endfor %}
-        </dl>
-        {% if previous %}
-        <h4>Previous version</h4>
-        <div class="previous">
-            <p>{{ previous }}</p>
-        </div>
-        {% endif %}
-        <dl class="annotations">
-            {% for ann in annotations %}
-            <dt><a href="{{ ann.iri }}">{{ ann.display }}</a></dt>
-            <dd>{{ ann.value }}</dd>
-            {% endfor %}
-        </dl>
+{% extends "base.html" %} {% block title %}Index{% endblock title %} {% block
+head %} {{ super() }}
+<style type="text/css">
+    .important {
+        color: #336699;
+    }
+</style>
+{% endblock head %} {% block content %} {% if iri %} {% if title %}
+<h1>{{ title }}</h1>
+{% endif %}
+<div class="ontology" id="{{ iri }}">
+    <p>
+        <strong>IRI:</strong>
+        <a href="{{ iri }}">{{ iri }}</a>
+    </p>
+    {% if version %}
+    <h4>Version</h4>
+    <div class="version">
+        <a href="{{ version }}">{{ version }}</a>
     </div>
-    {% endif %} {% if sidebar %}
-    <div id="side-nav">
-        <ul id="entities-sidebar">
-            <li>
-                <span class="caret">Classes</span>
-                <ul class="nested">
-                    {% for cls in sidebar.classes %}
-                    <li><a href="{{ cls.iri }}">{{ cls.display }}</a></li>
-                    {% endfor %}
-                </ul>
-            </li>
-            <li>
-                <span class="caret">Object Properties</span>
-                <ul class="nested">
-                    {% for op in sidebar.object_props %}
-                    <li><a href="{{ op.iri }}">{{ op.display }}</a></li>
-                    {% endfor %}
-                </ul>
-            </li>
-            <li>
-                <span class="caret">Annotation Properties</span>
-                <ul class="nested">
-                    {% for ap in sidebar.annotation_props %}
-                    <li><a href="{{ ap.iri }}">{{ ap.display }}</a></li>
-                    {% endfor %}
-                </ul>
-            </li>
-            <li>
-                <span class="caret">Data Properties</span>
-                <ul class="nested">
-                    {% for dp in sidebar.data_props %}
-                    <li><a href="{{ dp.iri }}">{{ dp.display }}</a></li>
-                    {% endfor %}
-                </ul>
-            </li>
-        </ul>
+    {% endif %} {% if description %}
+    <h4>Description</h4>
+    <div class="description">
+        <p>{{ description }}</p>
+    </div>
+    {% endif %} {% if license %}
+    <h4>License</h4>
+    <div class="license">
+        <p>{{ license }}</p>
     </div>
     {% endif %}
-</html>
+    <h4>Contributors</h4>
+    <dl>
+        {% for contrib in contributors %}
+        <dd class="contributor">
+            <p>{{ contrib.value }}</p>
+        </dd>
+        {% endfor %}
+    </dl>
+    {% if previous %}
+    <h4>Previous version</h4>
+    <div class="previous">
+        <p>{{ previous }}</p>
+    </div>
+    {% endif %}
+    <dl class="annotations">
+        {% for ann in annotations %}
+        <dt><a href="{{ ann.iri }}">{{ ann.display }}</a></dt>
+        <dd>{{ ann.value }}</dd>
+        {% endfor %}
+    </dl>
+</div>
+{% endif %} {% if sidebar %}
+<nav id="side-nav">
+    <ul id="entities-sidebar">
+        <li>
+            <span class="caret">Classes</span>
+            <ul class="nested">
+                {% for cls in sidebar.classes %}
+                <li><a href="{{ cls.iri }}">{{ cls.display }}</a></li>
+                {% endfor %}
+            </ul>
+        </li>
+        <li>
+            <span class="caret">Object Properties</span>
+            <ul class="nested">
+                {% for op in sidebar.object_props %}
+                <li><a href="{{ op.iri }}">{{ op.display }}</a></li>
+                {% endfor %}
+            </ul>
+        </li>
+        <li>
+            <span class="caret">Annotation Properties</span>
+            <ul class="nested">
+                {% for ap in sidebar.annotation_props %}
+                <li><a href="{{ ap.iri }}">{{ ap.display }}</a></li>
+                {% endfor %}
+            </ul>
+        </li>
+        <li>
+            <span class="caret">Data Properties</span>
+            <ul class="nested">
+                {% for dp in sidebar.data_props %}
+                <li><a href="{{ dp.iri }}">{{ dp.display }}</a></li>
+                {% endfor %}
+            </ul>
+        </li>
+    </ul>
+</nav>
+{% endif %} {% endblock content %}
