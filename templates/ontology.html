@@ -5,6 +5,7 @@ head %} {{ super() }}
         color: #336699;
     }
 </style>
+<script src="./static/scripts/htmx.js"></script>
 {% endblock head %} {% block content %} {% if iri %} {% if title %}
 <h1>{{ title }}</h1>
 {% endif %}
@@ -50,14 +51,15 @@ head %} {{ super() }}
         {% endfor %}
     </dl>
 </div>
-{% endif %} {% if sidebar %}
+{% endif %} 
+{% if sidebar %}
 <nav id="side-nav">
     <ul id="entities-sidebar">
         <li>
-            <span class="caret">Classes</span>
+            <span class="caret"><a href="#klsses">Classes</a></span>
             <ul class="nested">
                 {% for cls in sidebar.classes %}
-                <li><a href="{{ cls.iri }}">{{ cls.display }}</a></li>
+                <li><a href="#{{ cls.iri }}">{{ cls.display }}</a></li>
                 {% endfor %}
             </ul>
         </li>
@@ -87,4 +89,16 @@ head %} {{ super() }}
         </li>
     </ul>
 </nav>
-{% endif %} {% endblock content %}
+{% endif %} 
+{% if sidebar %}
+<div xmlns:widoco="https://w3id.org/widoco/vocab#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="klsses">
+    <h3 id="classes-headline" class="list">Classes</h3>
+    {% for cls in sidebar.classes %}
+    <h4><a href="/{{ cls.identifier }}.html">{{ cls.display }}</a></h4>
+    <div class="entity" id="{{ cls.iri }}" hx-get="/{{ cls.identifier }}.html"  hx-trigger="load" hx-select=".klss">
+        <div></div>
+    </div>   
+    {% endfor %}
+</div>
+{% endif %} 
+{% endblock content %}

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
-use std::fmt;
+use std::{env, fmt};
 
 use curie::PrefixMapping;
 use eyre::Result;
@@ -40,12 +40,17 @@ struct OntologyAnnotation {
 #[derive(Serialize, Debug)]
 struct EntityDisplay {
     iri: String,
+    identifier: String,
     display: String,
 }
 
 impl EntityDisplay {
-    fn new(iri: String, display: String) -> Self {
-        EntityDisplay { iri, display }
+    fn new(iri: String, identifier: String, display: String) -> Self {
+        EntityDisplay {
+            iri,
+            identifier,
+            display,
+        }
     }
 }
 
@@ -123,7 +128,7 @@ pub trait IRIMappedRenderHTML<A: ForIRI> {
     fn get_label_hashmap(&mut self) -> HashMap<IRI<A>, String> {
         HashMap::new()
     }
-    fn collect_entity_tree(&mut self) -> Result<SideBar> {
+    fn collect_entity_tree(&mut self, _: Option<&PrefixMapping>) -> Result<SideBar> {
         Err(eyre::Report::msg("Error when rendering tree"))
     }
 }
@@ -144,7 +149,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                 Component::DeclareClass(dc) => {
                     context.insert("iri", dc.0.0.as_ref());
                     this_kind = Kind::Class;
-                    context.insert("kind", "class")
+                    context.insert("kind", "klss")
                 }
                 Component::DeclareObjectProperty(op) => {
                     context.insert("iri", op.0.0.as_ref());
@@ -338,7 +343,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
             } else {
             }
         }
-        let entity_tree = match self.collect_entity_tree() {
+        let entity_tree = match self.collect_entity_tree(pm.as_ref()) {
             Ok(sb) => sb,
             Err(e) => {
                 return Err(eyre::Report::msg(format!(
@@ -353,7 +358,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
         Ok(TEMPLATES.render("ontology.html", &context)?)
     }
 
-    fn collect_entity_tree(&mut self) -> Result<SideBar> {
+    fn collect_entity_tree(&mut self, pm: Option<&PrefixMapping>) -> Result<SideBar> {
         let labels: HashMap<IRI<A>, String> = self.get_label_hashmap();
         let mut side_bar = SideBar::default();
         for sco in self.component_for_kind(ComponentKind::DeclareClass) {
@@ -362,9 +367,19 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                     let class_iri = &dc.0.0;
                     let iri_string = class_iri.to_string();
                     let class_label = labels.get(class_iri).unwrap_or(&iri_string).clone();
-                    side_bar
-                        .classes
-                        .push(EntityDisplay::new(iri_string, class_label))
+                    let class_identifier = if let Some(pm) = pm {
+                        match pm.shrink_iri(class_iri) {
+                            Ok(r) => r.to_string(),
+                            Err(_) => class_label.clone(),
+                        }
+                    } else {
+                        class_label.clone()
+                    };
+                    side_bar.classes.push(EntityDisplay::new(
+                        iri_string,
+                        class_identifier,
+                        class_label,
+                    ))
                 }
                 _ => (),
             }
@@ -375,9 +390,19 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                     let class_iri = &op.0.0;
                     let iri_string = class_iri.to_string();
                     let class_label = labels.get(class_iri).unwrap_or(&iri_string).clone();
-                    side_bar
-                        .object_props
-                        .push(EntityDisplay::new(iri_string, class_label))
+                    let class_identifier = if let Some(pm) = pm {
+                        match pm.shrink_iri(class_iri) {
+                            Ok(r) => r.to_string(),
+                            Err(_) => class_label.clone(),
+                        }
+                    } else {
+                        class_label.clone()
+                    };
+                    side_bar.object_props.push(EntityDisplay::new(
+                        iri_string,
+                        class_identifier,
+                        class_label,
+                    ))
                 }
                 _ => (),
             }
@@ -388,9 +413,19 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                     let class_iri = &ap.0.0;
                     let iri_string = class_iri.to_string();
                     let class_label = labels.get(class_iri).unwrap_or(&iri_string).clone();
-                    side_bar
-                        .annotation_props
-                        .push(EntityDisplay::new(iri_string, class_label))
+                    let class_identifier = if let Some(pm) = pm {
+                        match pm.shrink_iri(class_iri) {
+                            Ok(r) => r.to_string(),
+                            Err(_) => class_label.clone(),
+                        }
+                    } else {
+                        class_label.clone()
+                    };
+                    side_bar.annotation_props.push(EntityDisplay::new(
+                        iri_string,
+                        class_identifier,
+                        class_label,
+                    ))
                 }
                 _ => (),
             }
@@ -402,9 +437,19 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                     let class_iri = &dp.0.0;
                     let iri_string = class_iri.to_string();
                     let class_label = labels.get(class_iri).unwrap_or(&iri_string).clone();
-                    side_bar
-                        .data_props
-                        .push(EntityDisplay::new(iri_string, class_label))
+                    let class_identifier = if let Some(pm) = pm {
+                        match pm.shrink_iri(class_iri) {
+                            Ok(r) => r.to_string(),
+                            Err(e) => return Err(eyre::Report::msg(e)),
+                        }
+                    } else {
+                        class_label.clone()
+                    };
+                    side_bar.data_props.push(EntityDisplay::new(
+                        iri_string,
+                        class_identifier,
+                        class_label,
+                    ))
                 }
                 _ => (),
             }

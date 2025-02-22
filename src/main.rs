@@ -12,6 +12,7 @@ use std::path::Path;
 
 fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
     fs::create_dir_all(&dst)?;
+
     for entry in fs::read_dir(src)? {
         let entry = entry?;
         let ty = entry.file_type()?;
@@ -26,9 +27,8 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
 
 fn main() -> Result<()> {
     dotenv()?;
-    let base_url = env::var("BASE_URL")?;
     let ontology_iri = env::var("ONTOLOGY_IRI")?;
-    let suff = env::var("ONTOLOGY_SUFFIX")?;
+    let _suff = env::var("ONTOLOGY_SUFFIX")?;
     let dir = env::var("ONTOLOGY_DIR")?;
     let build = Build::new_arc();
     let f = File::open(dir)?;
@@ -37,21 +37,26 @@ fn main() -> Result<()> {
     assert!(r.is_ok(), "Expected ontology, got failure:{:?}", r.err());
     let (o, mut pm) = r.ok().unwrap();
     let mut oc: ArcIRIMappedOntology = ArcIRIMappedOntology::from(o);
-    pm.add_prefix("original", &ontology_iri).unwrap();
-    pm.add_prefix("live", &base_url).unwrap();
+    pm.set_default(&ontology_iri);
+    pm.add_prefix("skos", "http://www.w3.org/2004/02/skos/core#")
+        .unwrap();
+    pm.add_prefix("dct", "http://purl.org/dc/terms/").unwrap();
+    pm.add_prefix("dce", "http://purl.org/dc/elements/1.1/")
+        .unwrap();
+    // pm.add_prefix("live", &base_url).unwrap();
     let hm = oc.render_all_declarations_html(Some(&pm))?;
-    fs::create_dir_all(format!("public/{}", suff)).unwrap_or(println!("Folder already exist"));
+    fs::create_dir_all("public").unwrap_or(println!("Folder already exist"));
     for (k, v) in hm.iter() {
         match pm.shrink_iri(k) {
             Ok(i) => {
-                let iri_parts: Vec<String> =
-                    i.to_string().split(":").map(|s| s.to_string()).collect();
-                let prefix = &iri_parts[0];
-                match prefix.as_str() {
-                    "bfo" => {
-                        fs::write(format!("public/{}/{}.html", suff, &iri_parts[1]), v).unwrap();
-                    }
-                    _ => (),
+                let iri_parts: Vec<String> = i
+                    .to_string()
+                    .split(":")
+                    .map(|s: &str| s.to_string())
+                    .collect();
+                let prefix_len = iri_parts.len();
+                if prefix_len == 1 {
+                    fs::write(format!("public/{}.html", &iri_parts[0]), v).unwrap();
                 }
             }
             Err(_) => (),

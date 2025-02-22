@@ -1,22 +1,22 @@
 <!doctype html>
 <html>
+    {% if label %}
+    <h3>{{ label}}</h3>
+    {% else %}
+    <h3>{{ iri }}</h3>
+    {% endif %}
     <div class="{{ kind }}" id="{{ iri }}">
-        {% if label %}
-        <h3>{{ label}}</h3>
-        {% else %}
-        <h3>{{ iri }}</h3>
-        {% endif %}
         <p>
             <strong>IRI:</strong>
             <a href="{{ iri }}">{{ iri }}</a>
         </p>
         {% if definition %}
-        <h4>definition</h4>
+        <h5>definition</h5>
         <div class="definition">
             <p>{{ definition }}</p>
         </div>
         {% endif %} {% if example %}
-        <h4>example</h4>
+        <h5>example</h5>
         <div class="example">
             <p>{{ example }}</p>
         </div>
