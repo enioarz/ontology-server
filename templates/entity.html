@@ -1,5 +1,9 @@
-<!doctype html>
-<html>
+{% extends "base.html" %} 
+{% block title %}Index{% endblock title %} {% block head %} {{ super() }} {% endblock head %} 
+{% block aside %}
+<div></div>
+{% endblock aside%}
+{% block content %}
     {% if label %}
     <h3>{{ label}}</h3>
     {% else %}
@@ -28,4 +32,4 @@
             {% endfor %}
         </dl>
     </div>
-</html>
+{% endblock content %} 
