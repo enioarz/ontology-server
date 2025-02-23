@@ -1,35 +1,44 @@
-{% extends "base.html" %} 
-{% block title %}Index{% endblock title %} {% block head %} {{ super() }} {% endblock head %} 
-{% block aside %}
+{% extends "base.html" %} {% block title %}Index{% endblock title %} {% block
+head %} {{ super() }} {% endblock head %} {% block aside %}
 <div></div>
-{% endblock aside%}
-{% block content %}
-    {% if label %}
-    <h3>{{ label}}</h3>
-    {% else %}
-    <h3>{{ iri }}</h3>
-    {% endif %}
-    <div class="{{ kind }}" id="{{ iri }}">
-        <p>
-            <strong>IRI:</strong>
-            <a href="{{ iri }}">{{ iri }}</a>
-        </p>
-        {% if definition %}
-        <h5>definition</h5>
-        <div class="definition">
-            <p>{{ definition }}</p>
-        </div>
-        {% endif %} {% if example %}
-        <h5>example</h5>
-        <div class="example">
-            <p>{{ example }}</p>
-        </div>
-        {% endif %}
-        <dl class="annotations">
-            {% for ann in annotations %}
-            <dt><a href="{{ ann.iri }}">{{ ann.display }}</a></dt>
-            <dd>{{ ann.value }}</dd>
-            {% endfor %}
-        </dl>
+{% endblock aside%} {% block content %} {% if label %}
+<h3>{{ label}}</h3>
+{% else %}
+<h3>{{ iri }}</h3>
+{% endif %}
+<div class="entity-content" id="{{ iri }}">
+    <p>
+        <strong>IRI:</strong>
+        <a href="{{ iri }}">{{ iri }}</a>
+    </p>
+    {% if definition %}
+    <h5>definition</h5>
+    <div class="definition">
+        <p>{{ definition }}</p>
     </div>
-{% endblock content %} 
+    {% endif %} {% if example %}
+    <h5>example</h5>
+    <div class="example">
+        <p>{{ example }}</p>
+    </div>
+    {% endif %}
+    <dl class="annotations">
+        {% for ann in annotations %}
+        <dt><a href="{{ ann.iri }}">{{ ann.display }}</a></dt>
+        <dd>{{ ann.value }}</dd>
+        {% endfor %}
+    </dl>
+    <dl class="relations">
+        {% if super_classes %}
+        <dt>Parent</dt>
+        {% for sup in super_classes %}
+        <dd><a href="{{ sup.identifier }}">{{ sup.display }}</a></dd>
+        {% endfor %} {% endif %} {% if sub_classes %}
+        <dt>Children</dt>
+        {% for sub in sub_classes %}
+        <dd><a href="{{ sub.identifier }}">{{ sub.display }}</a></dd>
+        {% endfor %} {% endif %}
+    </dl>
+</div>
+{% endblock content %} {% block footer %} {{ super() }}
+<a href="/">Back to index</a>. {% endblock footer %}

@@ -1,16 +1,19 @@
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
-use std::{env, fmt};
+use std::fmt;
 
 use curie::PrefixMapping;
-use eyre::Result;
-use horned_owl::model::{AnnotationSubject, AnnotationValue, Literal};
+use eyre::{Context, Result};
+use horned_owl::model::{
+    AnnotationSubject, AnnotationValue, ClassExpression, Literal, ObjectPropertyExpression,
+    SubAnnotationPropertyOf, SubClassOf, SubObjectPropertyExpression, SubObjectPropertyOf,
+};
 use horned_owl::model::{Component, ComponentKind, ForIRI, IRI};
 use horned_owl::ontology::indexed::ForIndex;
 use horned_owl::ontology::iri_mapped::IRIMappedOntology;
 use lazy_static::lazy_static;
 use serde::Serialize;
-use tera::Context;
+use tera::Context as TeraContext;
 use tera::Tera;
 
 #[derive(Debug, Clone)]
@@ -107,8 +110,9 @@ pub trait IRIMappedRenderHTML<A: ForIRI> {
         &mut self,
         _: &IRI<A>,
         _: Option<&PrefixMapping>,
-    ) -> Result<String, tera::Error> {
-        Err(tera::Error::msg("Not implemented"))
+        _: &HashMap<IRI<A>, String>,
+    ) -> Result<String> {
+        Err(eyre::Report::msg("Not implemented"))
     }
 
     fn render_all_declarations_html(
@@ -138,10 +142,13 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
         &mut self,
         iri: &IRI<A>,
         pm: Option<&PrefixMapping>,
-    ) -> Result<String, tera::Error> {
-        let mut context = Context::new();
+        lref: &HashMap<IRI<A>, String>,
+    ) -> Result<String> {
+        let mut context = TeraContext::new();
         let mut annotations: Vec<OntologyAnnotation> = vec![];
         let mut this_kind: Kind = Kind::Undefined;
+        let mut super_entities: Vec<EntityDisplay> = vec![];
+        let mut sub_entities: Vec<EntityDisplay> = vec![];
         for ann_cmp in self.components_for_iri(&iri) {
             let _ann = &ann_cmp.ann; // May add annotations later
             let cmp = &ann_cmp.component;
@@ -193,15 +200,67 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                         None => (),
                     },
                 },
+                Component::SubClassOf(SubClassOf {
+                    sup: ClassExpression::Class(spc),
+                    sub: ClassExpression::Class(subc),
+                }) => {
+                    if &spc.0 == iri {
+                        let child_display = build_entity_display(subc.0.clone(), pm, lref);
+                        sub_entities.push(child_display)
+                    } else if &subc.0 == iri {
+                        let parent_display = build_entity_display(spc.0.clone(), pm, lref);
+                        super_entities.push(parent_display);
+                    }
+                }
+                Component::SubObjectPropertyOf(SubObjectPropertyOf {
+                    sup: ObjectPropertyExpression::ObjectProperty(sup),
+                    sub:
+                        SubObjectPropertyExpression::ObjectPropertyExpression(
+                            ObjectPropertyExpression::ObjectProperty(sub),
+                        ),
+                }) => {
+                    if &sup.0 == iri {
+                        let child_display = build_entity_display(sub.0.clone(), pm, lref);
+                        sub_entities.push(child_display)
+                    } else if &sup.0 == iri {
+                        let parent_display = build_entity_display(sub.0.clone(), pm, lref);
+                        super_entities.push(parent_display);
+                    }
+                }
+                Component::SubDataPropertyOf(dp) => (),
+                Component::EquivalentClasses(ec) => (),
+                Component::EquivalentObjectProperties(eop) => (),
+                Component::EquivalentDataProperties(edp) => (),
+                Component::ObjectPropertyRange(opr) => (),
+                Component::ObjectPropertyDomain(opd) => (),
+                Component::DisjointClasses(djc) => (),
+                Component::DisjointObjectProperties(djop) => (),
+                Component::DisjointDataProperties(djdp) => (),
+                Component::AnnotationPropertyRange(apr) => (),
+                Component::AnnotationPropertyDomain(apd) => (),
                 _ => (),
             }
         }
+        if super_entities.len() > 0 {
+            context.insert("super_classes", &super_entities);
+        }
+        if sub_entities.len() > 0 {
+            context.insert("sub_classes", &sub_entities);
+        }
         context.insert("annotations", &annotations);
         match this_kind {
-            Kind::Class => TEMPLATES.render("entity.html", &context),
-            Kind::ObjectProperty => TEMPLATES.render("entity.html", &context),
-            Kind::AnnotationProperty => TEMPLATES.render("entity.html", &context),
-            Kind::Undefined => Err(tera::Error::msg("Not implemented")),
+            Kind::Class => TEMPLATES
+                .render("entity.html", &context)
+                .wrap_err("Could not render class page"),
+            Kind::ObjectProperty => TEMPLATES
+                .render("entity.html", &context)
+                .wrap_err("Could not render object property page"),
+            Kind::AnnotationProperty => TEMPLATES
+                .render("entity.html", &context)
+                .wrap_err("Could not render ann prop page"),
+            Kind::Undefined => {
+                Err(tera::Error::msg("Not implemented")).wrap_err("Unkown entity kind")
+            }
         }
     }
 
@@ -210,8 +269,9 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
         pm: Option<&PrefixMapping>,
     ) -> Result<HashMap<IRI<A>, String>> {
         let mut declaration_hm: HashMap<IRI<A>, String> = HashMap::new();
+        let label_reference = self.get_label_hashmap();
         for cl in self.get_iris_for_declaration(ComponentKind::DeclareClass) {
-            let rendered_page = self.render_declaration_iri_html(&cl, pm)?;
+            let rendered_page = self.render_declaration_iri_html(&cl, pm, &label_reference)?;
             match declaration_hm.entry(cl) {
                 Entry::Occupied(o) => println!("{:?}", o),
                 Entry::Vacant(v) => {
@@ -220,7 +280,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
             }
         }
         for dp in self.get_iris_for_declaration(ComponentKind::DeclareDataProperty) {
-            let rendered_page = self.render_declaration_iri_html(&dp, pm)?;
+            let rendered_page = self.render_declaration_iri_html(&dp, pm, &label_reference)?;
             match declaration_hm.entry(dp) {
                 Entry::Occupied(o) => println!("{:?}", o),
                 Entry::Vacant(v) => {
@@ -229,7 +289,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
             }
         }
         for op in self.get_iris_for_declaration(ComponentKind::DeclareObjectProperty) {
-            let rendered_page = self.render_declaration_iri_html(&op, pm)?;
+            let rendered_page = self.render_declaration_iri_html(&op, pm, &label_reference)?;
             match declaration_hm.entry(op) {
                 Entry::Occupied(o) => println!("{:?}", o),
                 Entry::Vacant(v) => {
@@ -238,7 +298,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
             }
         }
         for ap in self.get_iris_for_declaration(ComponentKind::DeclareAnnotationProperty) {
-            let rendered_page = self.render_declaration_iri_html(&ap, pm)?;
+            let rendered_page = self.render_declaration_iri_html(&ap, pm, &label_reference)?;
             match declaration_hm.entry(ap) {
                 Entry::Occupied(o) => println!("{:?}", o),
                 Entry::Vacant(v) => {
@@ -290,7 +350,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
         label_map
     }
     fn render_metadata_html(&mut self, pm: Option<PrefixMapping>) -> Result<String> {
-        let mut context = Context::default();
+        let mut context = TeraContext::default();
         let mut contributors: Vec<OntologyAnnotation> = vec![];
         let mut annotations: Vec<OntologyAnnotation> = vec![];
         for oid in self.component_for_kind(ComponentKind::OntologyID) {
@@ -471,4 +531,30 @@ fn get_annotation_value<A: ForIRI>(av: &AnnotationValue<A>) -> Option<&str> {
         },
         AnnotationValue::IRI(ii) => Some(ii),
     }
+}
+
+fn build_entity_display<A: ForIRI>(
+    iri: IRI<A>,
+    pm: Option<&PrefixMapping>,
+    lref: &HashMap<IRI<A>, String>,
+) -> EntityDisplay {
+    let entity_id = if let Some(pm) = pm {
+        match pm.shrink_iri(iri.as_ref()) {
+            Ok(r) => {
+                let mut s = String::from("");
+                s.push_str(&r.to_string());
+                s.push_str(".html");
+                s
+            }
+            Err(_) => iri.to_string(),
+        }
+    } else {
+        iri.to_string()
+    };
+    let entity_label = match lref.get(&iri) {
+        Some(l) => l.clone(),
+        None => iri.to_string(),
+    };
+
+    EntityDisplay::new(iri.to_string(), entity_id, entity_label)
 }
