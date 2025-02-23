@@ -2,8 +2,8 @@
 <html lang="en">
     <head>
         {% block head %}
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="color-scheme" content="light dark" />
         <link rel="stylesheet" href="static/styles/pico.min.css" />
         <link rel="stylesheet" href="static/styles/base.css" />
@@ -12,15 +12,14 @@
     </head>
     <body>
         <main class="container page-grid">
-            
-        {% block aside %}
-        {% endblock aside %}
-        <div id="content">{% block content %}{% endblock content %}</div>
+            {% block aside %} {% endblock aside %}
+            <div id="content">{% block content %}{% endblock content %}</div>
         </main>
         <footer>
-            {% block footer %} &copy; Copyright 2025 by
-            <a href="http://domain.invalid/">Eugenio Arellano</a>. {% endblock
-            footer %}
+            {% block footer %} Built using ontology-server.rs
+            <a href="https://github.com/enioarz/ontology-server"
+                >ontology-server.rs</a
+            >. {% endblock footer %}
         </footer>
     </body>
 </html>
