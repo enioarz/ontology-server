@@ -5,8 +5,10 @@ use std::fmt;
 use curie::PrefixMapping;
 use eyre::{Context, Result};
 use horned_owl::model::{
-    AnnotationSubject, AnnotationValue, ClassExpression, Literal, ObjectPropertyExpression,
-    SubAnnotationPropertyOf, SubClassOf, SubObjectPropertyExpression, SubObjectPropertyOf,
+    AnnotationProperty, AnnotationSubject, AnnotationValue, Class, ClassExpression,
+    DeclareAnnotationProperty, DeclareClass, DeclareObjectProperty, Literal, ObjectProperty,
+    ObjectPropertyExpression, SubAnnotationPropertyOf, SubClassOf, SubObjectPropertyExpression,
+    SubObjectPropertyOf,
 };
 use horned_owl::model::{Component, ComponentKind, ForIRI, IRI};
 use horned_owl::ontology::indexed::ForIndex;
@@ -423,69 +425,29 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
         let mut side_bar = SideBar::default();
         for sco in self.component_for_kind(ComponentKind::DeclareClass) {
             match &sco.component {
-                Component::DeclareClass(dc) => {
-                    let class_iri = &dc.0.0;
-                    let iri_string = class_iri.to_string();
-                    let class_label = labels.get(class_iri).unwrap_or(&iri_string).clone();
-                    let class_identifier = if let Some(pm) = pm {
-                        match pm.shrink_iri(class_iri) {
-                            Ok(r) => r.to_string(),
-                            Err(_) => class_label.clone(),
-                        }
-                    } else {
-                        class_label.clone()
-                    };
-                    side_bar.classes.push(EntityDisplay::new(
-                        iri_string,
-                        class_identifier,
-                        class_label,
-                    ))
+                Component::DeclareClass(DeclareClass(Class(ii))) => {
+                    let class_display = build_entity_display(ii.clone(), pm, &labels);
+                    side_bar.classes.push(class_display)
                 }
                 _ => (),
             }
         }
         for sco in self.component_for_kind(ComponentKind::DeclareObjectProperty) {
             match &sco.component {
-                Component::DeclareObjectProperty(op) => {
-                    let class_iri = &op.0.0;
-                    let iri_string = class_iri.to_string();
-                    let class_label = labels.get(class_iri).unwrap_or(&iri_string).clone();
-                    let class_identifier = if let Some(pm) = pm {
-                        match pm.shrink_iri(class_iri) {
-                            Ok(r) => r.to_string(),
-                            Err(_) => class_label.clone(),
-                        }
-                    } else {
-                        class_label.clone()
-                    };
-                    side_bar.object_props.push(EntityDisplay::new(
-                        iri_string,
-                        class_identifier,
-                        class_label,
-                    ))
+                Component::DeclareObjectProperty(DeclareObjectProperty(ObjectProperty(ii))) => {
+                    let op_display = build_entity_display(ii.clone(), pm, &labels);
+                    side_bar.object_props.push(op_display)
                 }
                 _ => (),
             }
         }
         for sco in self.component_for_kind(ComponentKind::DeclareAnnotationProperty) {
             match &sco.component {
-                Component::DeclareAnnotationProperty(ap) => {
-                    let class_iri = &ap.0.0;
-                    let iri_string = class_iri.to_string();
-                    let class_label = labels.get(class_iri).unwrap_or(&iri_string).clone();
-                    let class_identifier = if let Some(pm) = pm {
-                        match pm.shrink_iri(class_iri) {
-                            Ok(r) => r.to_string(),
-                            Err(_) => class_label.clone(),
-                        }
-                    } else {
-                        class_label.clone()
-                    };
-                    side_bar.annotation_props.push(EntityDisplay::new(
-                        iri_string,
-                        class_identifier,
-                        class_label,
-                    ))
+                Component::DeclareAnnotationProperty(DeclareAnnotationProperty(
+                    AnnotationProperty(ii),
+                )) => {
+                    let ap_display = build_entity_display(ii.clone(), pm, &labels);
+                    side_bar.annotation_props.push(ap_display)
                 }
                 _ => (),
             }
@@ -543,7 +505,6 @@ fn build_entity_display<A: ForIRI>(
             Ok(r) => {
                 let mut s = String::from("");
                 s.push_str(&r.to_string());
-                s.push_str(".html");
                 s
             }
             Err(_) => iri.to_string(),
@@ -553,7 +514,16 @@ fn build_entity_display<A: ForIRI>(
     };
     let entity_label = match lref.get(&iri) {
         Some(l) => l.clone(),
-        None => iri.to_string(),
+        None => {
+            if let Some(pm) = pm {
+                match pm.shrink_iri(iri.as_ref()) {
+                    Ok(r) => r.to_string(),
+                    Err(_) => iri.to_string(),
+                }
+            } else {
+                iri.to_string()
+            }
+        }
     };
 
     EntityDisplay::new(iri.to_string(), entity_id, entity_label)

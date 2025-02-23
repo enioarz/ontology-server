@@ -32,11 +32,11 @@ head %} {{ super() }} {% endblock head %} {% block aside %}
         {% if super_classes %}
         <dt>Parent</dt>
         {% for sup in super_classes %}
-        <dd><a href="{{ sup.identifier }}">{{ sup.display }}</a></dd>
+        <dd><a href="{{ sup.identifier }}.html">{{ sup.display }}</a></dd>
         {% endfor %} {% endif %} {% if sub_classes %}
         <dt>Children</dt>
         {% for sub in sub_classes %}
-        <dd><a href="{{ sub.identifier }}">{{ sub.display }}</a></dd>
+        <dd><a href="{{ sub.identifier }}.html">{{ sub.display }}</a></dd>
         {% endfor %} {% endif %}
     </dl>
 </div>
