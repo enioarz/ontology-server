@@ -12,12 +12,12 @@ head %} {{ super() }} {% endblock head %} {% block aside %}
         <a href="{{ iri }}">{{ iri }}</a>
     </p>
     {% if definition %}
-    <h5>definition</h5>
+    <h5>Definition</h5>
     <div class="definition">
         <p>{{ definition }}</p>
     </div>
     {% endif %} {% if example %}
-    <h5>example</h5>
+    <h5>Example</h5>
     <div class="example">
         <p>{{ example }}</p>
     </div>
@@ -29,6 +29,7 @@ head %} {{ super() }} {% endblock head %} {% block aside %}
         {% endfor %}
     </dl>
     <dl class="relations">
+        <h5>Relations</h5>
         {% if super_classes %}
         <dt>Parent</dt>
         {% for sup in super_classes %}
