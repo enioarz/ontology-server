@@ -7,8 +7,8 @@ use eyre::{Context, Result};
 use horned_owl::model::{
     AnnotationProperty, AnnotationSubject, AnnotationValue, Class, ClassExpression,
     DeclareAnnotationProperty, DeclareClass, DeclareObjectProperty, Literal, ObjectProperty,
-    ObjectPropertyExpression, SubAnnotationPropertyOf, SubClassOf, SubObjectPropertyExpression,
-    SubObjectPropertyOf,
+    ObjectPropertyExpression, ObjectPropertyRange, SubAnnotationPropertyOf, SubClassOf,
+    SubObjectPropertyExpression, SubObjectPropertyOf,
 };
 use horned_owl::model::{Component, ComponentKind, ForIRI, IRI};
 use horned_owl::ontology::indexed::ForIndex;
@@ -47,6 +47,22 @@ struct EntityDisplay {
     iri: String,
     identifier: String,
     display: String,
+}
+
+#[derive(Serialize, Debug)]
+struct AndDisplay(Vec<DisplayComp>);
+
+#[derive(Serialize, Debug)]
+struct SomeDisplay {
+    first: Box<DisplayComp>,
+    second: Box<DisplayComp>,
+}
+
+#[derive(Serialize, Debug)]
+enum DisplayComp {
+    Simple(EntityDisplay),
+    And(AndDisplay),
+    Some(SomeDisplay),
 }
 
 impl EntityDisplay {
@@ -149,8 +165,8 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
         let mut context = TeraContext::new();
         let mut annotations: Vec<OntologyAnnotation> = vec![];
         let mut this_kind: Kind = Kind::Undefined;
-        let mut super_entities: Vec<EntityDisplay> = vec![];
-        let mut sub_entities: Vec<EntityDisplay> = vec![];
+        let mut super_entities: Vec<DisplayComp> = vec![];
+        let mut sub_entities: Vec<DisplayComp> = vec![];
         for ann_cmp in self.components_for_iri(&iri) {
             let _ann = &ann_cmp.ann; // May add annotations later
             let cmp = &ann_cmp.component;
@@ -208,10 +224,10 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                 }) => {
                     if &spc.0 == iri {
                         let child_display = build_entity_display(subc.0.clone(), pm, lref);
-                        sub_entities.push(child_display)
+                        sub_entities.push(DisplayComp::Simple(child_display))
                     } else if &subc.0 == iri {
                         let parent_display = build_entity_display(spc.0.clone(), pm, lref);
-                        super_entities.push(parent_display);
+                        super_entities.push(DisplayComp::Simple(parent_display));
                     }
                 }
                 Component::SubObjectPropertyOf(SubObjectPropertyOf {
@@ -223,17 +239,34 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                 }) => {
                     if &sup.0 == iri {
                         let child_display = build_entity_display(sub.0.clone(), pm, lref);
-                        sub_entities.push(child_display)
+                        sub_entities.push(DisplayComp::Simple(child_display))
                     } else if &sup.0 == iri {
                         let parent_display = build_entity_display(sub.0.clone(), pm, lref);
-                        super_entities.push(parent_display);
+                        super_entities.push(DisplayComp::Simple(parent_display));
                     }
                 }
                 Component::SubDataPropertyOf(dp) => (),
                 Component::EquivalentClasses(ec) => (),
                 Component::EquivalentObjectProperties(eop) => (),
                 Component::EquivalentDataProperties(edp) => (),
-                Component::ObjectPropertyRange(opr) => (),
+                Component::ObjectPropertyRange(ObjectPropertyRange {
+                    ope: ObjectPropertyExpression::ObjectProperty(ObjectProperty(ii)),
+                    ce: ClassExpression::ObjectUnionOf(ce),
+                }) => {
+                    if ii == iri {
+                        let mut union: Vec<DisplayComp> = vec![];
+                        for c in ce.iter() {
+                            match c {
+                                ClassExpression::Class(class) => {
+                                    let cls = build_entity_display(class.0.clone(), pm, lref);
+                                    union.push(DisplayComp::Simple(cls))
+                                }
+                                _ => (),
+                            }
+                        }
+                        context.insert("op_range", &DisplayComp::And(AndDisplay(union)));
+                    }
+                }
                 Component::ObjectPropertyDomain(opd) => (),
                 Component::DisjointClasses(djc) => (),
                 Component::DisjointObjectProperties(djop) => (),

@@ -32,13 +32,33 @@ head %} {{ super() }} {% endblock head %} {% block aside %}
         <h5>Relations</h5>
         {% if super_classes %}
         <dt>Parent</dt>
-        {% for sup in super_classes %}
+        {% for sup_enum in super_classes %} {% set sup = sup_enum.Simple %}
         <dd><a href="{{ sup.identifier }}.html">{{ sup.display }}</a></dd>
         {% endfor %} {% endif %} {% if sub_classes %}
         <dt>Children</dt>
-        {% for sub in sub_classes %}
+        {% for sub_enum in sub_classes %} {% set sub = sub_enum.Simple %}
         <dd><a href="{{ sub.identifier }}.html">{{ sub.display }}</a></dd>
-        {% endfor %} {% endif %}
+        {% endfor %} {% endif %} {% if op_range %}
+        <dt>Range</dt>
+        {% if op_range.Simple %}
+        <dd>
+            <a href="{{ op_range.Simple.identifier }}.html"
+                >{{ op_range.Simple.display }}</a
+            >
+        </dd>
+        {% elif op_range.And %}
+        <dd>
+            {% for ca in op_range.And %} {% if loop.last %}
+            <a href="{{ ca.Simple.identifier }}.html"
+                >{{ ca.Simple.display }}</a
+            >
+            {% else %}
+            <a href="{{ ca.Simple.identifier }}.html"
+                >{{ ca.Simple.display }}</a
+            >
+            and {% endif %} {% endfor %}
+        </dd>
+        {% elif op_range.Some %} {% endif %} {% endif %}
     </dl>
 </div>
 {% endblock content %} {% block footer %} {{ super() }}
