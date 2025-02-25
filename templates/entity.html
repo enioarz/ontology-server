@@ -32,9 +32,25 @@ head %} {{ super() }} {% endblock head %} {% block aside %}
         <h5>Relations</h5>
         {% if super_classes %}
         <dt>Parent</dt>
-        {% for sup_enum in super_classes %} {% set sup = sup_enum.Simple %}
-        <dd><a href="{{ sup.identifier }}.html">{{ sup.display }}</a></dd>
-        {% endfor %} {% endif %} {% if sub_classes %}
+        {% for sup_enum in super_classes %} {% if sup_enum.Simple %}
+        <dd>
+            <a href="{{ sup_enum.Simple.identifier }}.html"
+                >{{ sup_enum.Simple.display }}</a
+            >
+        </dd>
+        {% elif sup_enum.Some %} {% set s = sup_enum.Some %} {% if s.ope.Simple
+        %}
+        <dd>
+            <a href="{{ s.ope.Simple.identifier }}.html"
+                >{{ s.ope.Simple.display }}</a
+            >
+            {% endif %} some {% if s.ce.Simple %}
+            <a href="{{ s.ce.Simple.identifier }}.html"
+                >{{ s.ce.Simple.display }}</a
+            >
+        </dd>
+        {% endif %} {% elif sup_enum.And %} {% endif %} {% endfor %} {% endif %}
+        {% if sub_classes %}
         <dt>Children</dt>
         {% for sub_enum in sub_classes %} {% set sub = sub_enum.Simple %}
         <dd><a href="{{ sub.identifier }}.html">{{ sub.display }}</a></dd>

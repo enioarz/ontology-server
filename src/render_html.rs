@@ -54,8 +54,8 @@ struct AndDisplay(Vec<DisplayComp>);
 
 #[derive(Serialize, Debug)]
 struct SomeDisplay {
-    first: Box<DisplayComp>,
-    second: Box<DisplayComp>,
+    ope: Box<DisplayComp>,
+    ce: Box<DisplayComp>,
 }
 
 #[derive(Serialize, Debug)]
@@ -230,6 +230,25 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                         super_entities.push(DisplayComp::Simple(parent_display));
                     }
                 }
+                Component::SubClassOf(SubClassOf {
+                    sup:
+                        ClassExpression::ObjectAllValuesFrom {
+                            ope: ObjectPropertyExpression::ObjectProperty(ope),
+                            bce,
+                        },
+                    sub: ClassExpression::Class(subc),
+                }) => {
+                    if let ClassExpression::Class(cl) = bce.as_ref() {
+                        if &subc.0 == iri {
+                            let op_display = build_entity_display(ope.0.clone(), pm, lref);
+                            let class_display = build_entity_display(cl.0.clone(), pm, lref);
+                            super_entities.push(DisplayComp::Some(SomeDisplay {
+                                ope: Box::new(DisplayComp::Simple(op_display)),
+                                ce: Box::new(DisplayComp::Simple(class_display)),
+                            }));
+                        }
+                    }
+                }
                 Component::SubObjectPropertyOf(SubObjectPropertyOf {
                     sup: ObjectPropertyExpression::ObjectProperty(sup),
                     sub:
@@ -266,6 +285,13 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                         }
                         context.insert("op_range", &DisplayComp::And(AndDisplay(union)));
                     }
+                }
+                Component::ObjectPropertyRange(ObjectPropertyRange {
+                    ope: ObjectPropertyExpression::ObjectProperty(ObjectProperty(ii)),
+                    ce: ClassExpression::Class(c),
+                }) => {
+                    let range_class = build_entity_display(c.0.clone(), pm, lref);
+                    context.insert("op_range", &DisplayComp::Simple(range_class));
                 }
                 Component::ObjectPropertyDomain(opd) => (),
                 Component::DisjointClasses(djc) => (),
