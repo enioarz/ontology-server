@@ -1,10 +1,17 @@
-{% macro expand_entity(entity) %} {% if entity.Simple %}
-<a href="{{ entity.Simple.identifier }}.html">{{ entity.Simple.display }}</a>
-{% elif entity.And %} {% for ca in entity.And %} {% if loop.last %} {{
-macros::expand_entity(entity=ca) }} {% else %} {{
-macros::expand_entity(entity=ca) }}
-<span style="font-weight: bold">and</span> {% endif %} {% endfor %} {% elif
-entity.Some %} {{ macros::expand_entity(entity=entity.Some.ope) }}
-<span style="font-weight: bold">some</span> {{
-macros::expand_entity(entity=entity.Some.ce) }} {% endif %} {% endmacro
-expand_entity %}
+{% macro expand_entity(entity) %}
+    {% if entity.Simple %}
+        <a href="{{ entity.Simple.identifier }}.html">{{ entity.Simple.display }}</a>
+    {% elif entity.And %}
+        {% for ca in entity.And %}
+            {% if loop.last %}
+                {{ self::expand_entity(entity=ca) }}
+            {% else %}
+                {{ self::expand_entity(entity=ca) }} <span style="font-weight: bold">and</span>
+            {% endif %}
+        {% endfor %}
+    {% elif entity.All %}
+        {{ self::expand_entity(entity=entity.All.ope) }} <span style="font-weight: bold">only</span> {{ self::expand_entity(entity=entity.All.ce) }}
+    {% elif entity.Some %}
+        {{ self::expand_entity(entity=entity.Some.ope) }} <span style="font-weight: bold">some</span> {{ self::expand_entity(entity=entity.Some.ce) }}
+    {% endif %}
+{% endmacro expand_entity %}
