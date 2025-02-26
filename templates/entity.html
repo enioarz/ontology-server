@@ -49,12 +49,16 @@ Index
         {% if sub_classes %}
         <dt>Children</dt>
             {% for sub_enum in sub_classes %}
-            <dd>{{macros::expand_entity(entity=sub_enum)}}</dd>
+            <dd> {{macros::expand_entity(entity=sub_enum)}}</dd>
             {% endfor %}
         {% endif %}
         {% if op_range %}
         <dt>Range</dt>
             <dd>{{macros::expand_entity(entity=op_range)}}</dd>
+        {% endif %}
+        {% if op_domain %}
+        <dt>Domain</dt>
+            <dd>{{macros::expand_entity(entity=op_domain)}}</dd>
         {% endif %}
     </dl>
 </div>

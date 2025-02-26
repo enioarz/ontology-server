@@ -7,8 +7,8 @@ use eyre::{Context, Result};
 use horned_owl::model::{
     AnnotationProperty, AnnotationSubject, AnnotationValue, Class, ClassExpression,
     DeclareAnnotationProperty, DeclareClass, DeclareObjectProperty, Literal, ObjectProperty,
-    ObjectPropertyExpression, ObjectPropertyRange, SubAnnotationPropertyOf, SubClassOf,
-    SubObjectPropertyExpression, SubObjectPropertyOf,
+    ObjectPropertyDomain, ObjectPropertyExpression, ObjectPropertyRange, SubAnnotationPropertyOf,
+    SubClassOf, SubObjectPropertyExpression, SubObjectPropertyOf,
 };
 use horned_owl::model::{Component, ComponentKind, ForIRI, IRI};
 use horned_owl::ontology::indexed::ForIndex;
@@ -50,10 +50,10 @@ struct EntityDisplay {
 }
 
 #[derive(Serialize, Debug)]
-struct AndDisplay(Vec<DisplayComp>);
+struct GroupDisplay(Vec<DisplayComp>);
 
 #[derive(Serialize, Debug)]
-struct SomeDisplay {
+struct OPDisplay {
     ope: Box<DisplayComp>,
     ce: Box<DisplayComp>,
 }
@@ -61,8 +61,11 @@ struct SomeDisplay {
 #[derive(Serialize, Debug)]
 enum DisplayComp {
     Simple(EntityDisplay),
-    And(AndDisplay),
-    Some(SomeDisplay),
+    And(GroupDisplay),
+    Or(GroupDisplay),
+    Some(OPDisplay),
+    All(OPDisplay),
+    Not(Box<DisplayComp>),
 }
 
 impl EntityDisplay {
@@ -231,22 +234,21 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                     }
                 }
                 Component::SubClassOf(SubClassOf {
-                    sup:
-                        ClassExpression::ObjectAllValuesFrom {
-                            ope: ObjectPropertyExpression::ObjectProperty(ope),
-                            bce,
-                        },
+                    sup,
                     sub: ClassExpression::Class(subc),
                 }) => {
-                    if let ClassExpression::Class(cl) = bce.as_ref() {
-                        if &subc.0 == iri {
-                            let op_display = build_entity_display(ope.0.clone(), pm, lref);
-                            let class_display = build_entity_display(cl.0.clone(), pm, lref);
-                            super_entities.push(DisplayComp::Some(SomeDisplay {
-                                ope: Box::new(DisplayComp::Simple(op_display)),
-                                ce: Box::new(DisplayComp::Simple(class_display)),
-                            }));
-                        }
+                    if &subc.0 == iri {
+                        let class_display = unpack_class_expression(sup.clone(), pm, lref);
+                        super_entities.push(class_display);
+                    }
+                }
+                Component::SubClassOf(SubClassOf {
+                    sup: ClassExpression::Class(supc),
+                    sub,
+                }) => {
+                    if &supc.0 == iri {
+                        let class_display = unpack_class_expression(sub.clone(), pm, lref);
+                        sub_entities.push(class_display);
                     }
                 }
                 Component::SubObjectPropertyOf(SubObjectPropertyOf {
@@ -270,30 +272,22 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                 Component::EquivalentDataProperties(edp) => (),
                 Component::ObjectPropertyRange(ObjectPropertyRange {
                     ope: ObjectPropertyExpression::ObjectProperty(ObjectProperty(ii)),
-                    ce: ClassExpression::ObjectUnionOf(ce),
+                    ce,
                 }) => {
                     if ii == iri {
-                        let mut union: Vec<DisplayComp> = vec![];
-                        for c in ce.iter() {
-                            match c {
-                                ClassExpression::Class(class) => {
-                                    let cls = build_entity_display(class.0.clone(), pm, lref);
-                                    union.push(DisplayComp::Simple(cls))
-                                }
-                                _ => (),
-                            }
-                        }
-                        context.insert("op_range", &DisplayComp::And(AndDisplay(union)));
+                        let ce_display = unpack_class_expression(ce.clone(), pm, lref);
+                        context.insert("op_range", &ce_display);
                     }
                 }
-                Component::ObjectPropertyRange(ObjectPropertyRange {
+                Component::ObjectPropertyDomain(ObjectPropertyDomain {
                     ope: ObjectPropertyExpression::ObjectProperty(ObjectProperty(ii)),
-                    ce: ClassExpression::Class(c),
+                    ce,
                 }) => {
-                    let range_class = build_entity_display(c.0.clone(), pm, lref);
-                    context.insert("op_range", &DisplayComp::Simple(range_class));
-                }
-                Component::ObjectPropertyDomain(opd) => (),
+                    if ii == iri {
+                        let ce_display = unpack_class_expression(ce.clone(), pm, lref);
+                        context.insert("op_domain", &ce_display);
+                    }
+                },
                 Component::DisjointClasses(djc) => (),
                 Component::DisjointObjectProperties(djop) => (),
                 Component::DisjointDataProperties(djdp) => (),
@@ -586,4 +580,72 @@ fn build_entity_display<A: ForIRI>(
     };
 
     EntityDisplay::new(iri.to_string(), entity_id, entity_label)
+}
+
+fn unpack_class_expression<A: ForIRI>(
+    ce: ClassExpression<A>,
+    pm: Option<&PrefixMapping>,
+    lref: &HashMap<IRI<A>, String>,
+) -> DisplayComp {
+    match ce {
+        ClassExpression::Class(class) => {
+            let disp = build_entity_display(class.0.clone(), pm, lref);
+            DisplayComp::Simple(disp)
+        }
+        ClassExpression::ObjectIntersectionOf(class_expressions) => {
+            let v: Vec<DisplayComp> = class_expressions
+                .iter()
+                .map(|ce| unpack_class_expression(ce.clone(), pm, lref))
+                .collect();
+            DisplayComp::And(GroupDisplay(v))
+        }
+        ClassExpression::ObjectUnionOf(class_expressions) => {
+            let v: Vec<DisplayComp> = class_expressions
+                .iter()
+                .map(|ce| unpack_class_expression(ce.clone(), pm, lref))
+                .collect();
+            DisplayComp::Or(GroupDisplay(v))
+        }
+        ClassExpression::ObjectComplementOf(class_expression) => {
+            let ce = unpack_class_expression(*class_expression, pm, lref);
+            println!("{:#?}",ce);
+            DisplayComp::Not(Box::new(ce))
+        }
+        ClassExpression::ObjectOneOf(individuals) => todo!(),
+        ClassExpression::ObjectSomeValuesFrom { ope, bce } => {
+            let ope = Box::new(unpack_object_property_expression(ope, pm, lref));
+            let ce = Box::new(unpack_class_expression(*bce, pm, lref));
+            DisplayComp::Some(OPDisplay { ope, ce })
+        }
+        ClassExpression::ObjectAllValuesFrom { ope, bce } => {
+            let ope = Box::new(unpack_object_property_expression(ope, pm, lref));
+            let ce = Box::new(unpack_class_expression(*bce, pm, lref));
+            DisplayComp::All(OPDisplay { ope, ce })
+        }
+        ClassExpression::ObjectHasValue { ope, i } => todo!(),
+        ClassExpression::ObjectHasSelf(object_property_expression) => todo!(),
+        ClassExpression::ObjectMinCardinality { n, ope, bce } => todo!(),
+        ClassExpression::ObjectMaxCardinality { n, ope, bce } => todo!(),
+        ClassExpression::ObjectExactCardinality { n, ope, bce } => todo!(),
+        ClassExpression::DataSomeValuesFrom { dp, dr } => todo!(),
+        ClassExpression::DataAllValuesFrom { dp, dr } => todo!(),
+        ClassExpression::DataHasValue { dp, l } => todo!(),
+        ClassExpression::DataMinCardinality { n, dp, dr } => todo!(),
+        ClassExpression::DataMaxCardinality { n, dp, dr } => todo!(),
+        ClassExpression::DataExactCardinality { n, dp, dr } => todo!(),
+    }
+}
+
+fn unpack_object_property_expression<A: ForIRI>(
+    ope: ObjectPropertyExpression<A>,
+    pm: Option<&PrefixMapping>,
+    lref: &HashMap<IRI<A>, String>,
+) -> DisplayComp {
+    match ope {
+        ObjectPropertyExpression::ObjectProperty(object_property) => {
+            let op_display = build_entity_display(object_property.0.clone(), pm, lref);
+            DisplayComp::Simple(op_display)
+        }
+        ObjectPropertyExpression::InverseObjectProperty(object_property) => todo!(),
+    }
 }
