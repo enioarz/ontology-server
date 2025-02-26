@@ -5,10 +5,7 @@ use std::fmt;
 use curie::PrefixMapping;
 use eyre::{Context, Result};
 use horned_owl::model::{
-    AnnotationProperty, AnnotationSubject, AnnotationValue, Class, ClassExpression,
-    DeclareAnnotationProperty, DeclareClass, DeclareObjectProperty, Literal, ObjectProperty,
-    ObjectPropertyDomain, ObjectPropertyExpression, ObjectPropertyRange, SubAnnotationPropertyOf,
-    SubClassOf, SubObjectPropertyExpression, SubObjectPropertyOf,
+    AnnotationProperty, AnnotationSubject, AnnotationValue, Class, ClassExpression, DeclareAnnotationProperty, DeclareClass, DeclareObjectProperty, InverseObjectProperties, Literal, ObjectProperty, ObjectPropertyDomain, ObjectPropertyExpression, ObjectPropertyRange, SubAnnotationPropertyOf, SubClassOf, SubObjectPropertyExpression, SubObjectPropertyOf
 };
 use horned_owl::model::{Component, ComponentKind, ForIRI, IRI};
 use horned_owl::ontology::indexed::ForIndex;
@@ -169,6 +166,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
         let mut annotations: Vec<OntologyAnnotation> = vec![];
         let mut this_kind: Kind = Kind::Undefined;
         let mut super_entities: Vec<DisplayComp> = vec![];
+        let mut inverse_ops: Vec<DisplayComp> = vec![];
         let mut sub_entities: Vec<DisplayComp> = vec![];
         for ann_cmp in self.components_for_iri(&iri) {
             let _ann = &ann_cmp.ann; // May add annotations later
@@ -270,6 +268,15 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                 Component::EquivalentClasses(ec) => (),
                 Component::EquivalentObjectProperties(eop) => (),
                 Component::EquivalentDataProperties(edp) => (),
+                Component::InverseObjectProperties(InverseObjectProperties(iop, iiop)) => {
+                    if &iop.0 == iri {
+                        let op_display = build_entity_display(iiop.0.clone(), pm, lref);
+                        inverse_ops.push(DisplayComp::Simple(op_display));
+                    } else if  &iiop.0 == iri {
+                        let op_display = build_entity_display(iop.0.clone(), pm, lref);
+                        inverse_ops.push(DisplayComp::Simple(op_display));
+                    }
+                },
                 Component::ObjectPropertyRange(ObjectPropertyRange {
                     ope: ObjectPropertyExpression::ObjectProperty(ObjectProperty(ii)),
                     ce,
@@ -301,6 +308,9 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
         }
         if sub_entities.len() > 0 {
             context.insert("sub_classes", &sub_entities);
+        }
+        if inverse_ops.len() > 0 {
+            context.insert("inverse_ops", &inverse_ops);
         }
         context.insert("annotations", &annotations);
         match this_kind {
@@ -646,6 +656,9 @@ fn unpack_object_property_expression<A: ForIRI>(
             let op_display = build_entity_display(object_property.0.clone(), pm, lref);
             DisplayComp::Simple(op_display)
         }
-        ObjectPropertyExpression::InverseObjectProperty(object_property) => todo!(),
+        ObjectPropertyExpression::InverseObjectProperty(object_property) => {
+            let op_display = build_entity_display(object_property.0.clone(), pm, lref);
+            DisplayComp::Simple(op_display)
+        },
     }
 }

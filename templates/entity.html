@@ -60,6 +60,12 @@ Index
         <dt>Domain</dt>
             <dd>{{macros::expand_entity(entity=op_domain)}}</dd>
         {% endif %}
+        {% if inverse_ops %}
+        <dt>Inverse Object Properties</dt>
+            {% for op in inverse_ops %}
+            <dd>{{macros::expand_entity(entity=op)}}</dd>
+            {% endfor %}
+        {% endif %}
     </dl>
 </div>
 {% endblock content %}
