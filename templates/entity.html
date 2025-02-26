@@ -1,5 +1,6 @@
-{% extends "base.html" %} {% block title %}Index{% endblock title %} {% block
-head %} {{ super() }} {% endblock head %} {% block aside %}
+{% extends "base.html" %} {% import "macros.html" as macros %} {% block title
+%}Index{% endblock title %} {% block head %} {{ super() }} {% endblock head %}
+{% block aside %}
 <div></div>
 {% endblock aside%} {% block content %} {% if label %}
 <h3>{{ label}}</h3>
@@ -32,49 +33,16 @@ head %} {{ super() }} {% endblock head %} {% block aside %}
         <h5>Relations</h5>
         {% if super_classes %}
         <dt>Parent</dt>
-        {% for sup_enum in super_classes %} {% if sup_enum.Simple %}
-        <dd>
-            <a href="{{ sup_enum.Simple.identifier }}.html"
-                >{{ sup_enum.Simple.display }}</a
-            >
-        </dd>
-        {% elif sup_enum.Some %} {% set s = sup_enum.Some %} {% if s.ope.Simple
-        %}
-        <dd>
-            <a href="{{ s.ope.Simple.identifier }}.html"
-                >{{ s.ope.Simple.display }}</a
-            >
-            {% endif %} some {% if s.ce.Simple %}
-            <a href="{{ s.ce.Simple.identifier }}.html"
-                >{{ s.ce.Simple.display }}</a
-            >
-        </dd>
-        {% endif %} {% elif sup_enum.And %} {% endif %} {% endfor %} {% endif %}
-        {% if sub_classes %}
+        {% for sup_enum in super_classes %}
+        <dd>{{macros::expand_entity(entity=sup_enum)}}</dd>
+        {% endfor %} {% endif %} {% if sub_classes %}
         <dt>Children</dt>
-        {% for sub_enum in sub_classes %} {% set sub = sub_enum.Simple %}
-        <dd><a href="{{ sub.identifier }}.html">{{ sub.display }}</a></dd>
+        {% for sub_enum in sub_classes %}
+        <dd>{{macros::expand_entity(entity=sub_enum)}}</dd>
         {% endfor %} {% endif %} {% if op_range %}
         <dt>Range</dt>
-        {% if op_range.Simple %}
-        <dd>
-            <a href="{{ op_range.Simple.identifier }}.html"
-                >{{ op_range.Simple.display }}</a
-            >
-        </dd>
-        {% elif op_range.And %}
-        <dd>
-            {% for ca in op_range.And %} {% if loop.last %}
-            <a href="{{ ca.Simple.identifier }}.html"
-                >{{ ca.Simple.display }}</a
-            >
-            {% else %}
-            <a href="{{ ca.Simple.identifier }}.html"
-                >{{ ca.Simple.display }}</a
-            >
-            and {% endif %} {% endfor %}
-        </dd>
-        {% elif op_range.Some %} {% endif %} {% endif %}
+        <dd>{{macros::expand_entity(entity=op_range)}}</dd>
+        {% endif %}
     </dl>
 </div>
 {% endblock content %} {% block footer %} {{ super() }}
