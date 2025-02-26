@@ -5,7 +5,7 @@ use std::fmt;
 use curie::PrefixMapping;
 use eyre::{Context, Result};
 use horned_owl::model::{
-    AnnotationProperty, AnnotationSubject, AnnotationValue, Class, ClassExpression, DeclareAnnotationProperty, DeclareClass, DeclareObjectProperty, InverseObjectProperties, Literal, ObjectProperty, ObjectPropertyDomain, ObjectPropertyExpression, ObjectPropertyRange, SubAnnotationPropertyOf, SubClassOf, SubObjectPropertyExpression, SubObjectPropertyOf
+    AnnotationProperty, AnnotationSubject, AnnotationValue, Class, ClassExpression, DeclareAnnotationProperty, DeclareClass, DeclareObjectProperty, EquivalentClasses, InverseObjectProperties, Literal, ObjectProperty, ObjectPropertyDomain, ObjectPropertyExpression, ObjectPropertyRange, SubAnnotationPropertyOf, SubClassOf, SubObjectPropertyExpression, SubObjectPropertyOf
 };
 use horned_owl::model::{Component, ComponentKind, ForIRI, IRI};
 use horned_owl::ontology::indexed::ForIndex;
@@ -265,7 +265,13 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                     }
                 }
                 Component::SubDataPropertyOf(dp) => (),
-                Component::EquivalentClasses(ec) => (),
+                Component::EquivalentClasses(EquivalentClasses(ecs)) => {
+                    let ecx: Vec<DisplayComp> = ecs
+                                            .iter()
+                                            .map(|e| unpack_class_expression(e.clone(), pm, lref))
+                                            .collect();
+
+                },
                 Component::EquivalentObjectProperties(eop) => (),
                 Component::EquivalentDataProperties(edp) => (),
                 Component::InverseObjectProperties(InverseObjectProperties(iop, iiop)) => {
@@ -618,7 +624,6 @@ fn unpack_class_expression<A: ForIRI>(
         }
         ClassExpression::ObjectComplementOf(class_expression) => {
             let ce = unpack_class_expression(*class_expression, pm, lref);
-            println!("{:#?}",ce);
             DisplayComp::Not(Box::new(ce))
         }
         ClassExpression::ObjectOneOf(individuals) => todo!(),
