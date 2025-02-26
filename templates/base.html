@@ -1,14 +1,16 @@
 <!doctype html>
 <html lang="en">
     <head>
-        {% block head %}
+    {% block head %}
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="color-scheme" content="light dark" />
         <link rel="stylesheet" href="static/styles/pico.min.css" />
         <link rel="stylesheet" href="static/styles/base.css" />
-        <title>{% block title %}{% endblock title %} - Ontology</title>
-        {% endblock head %}
+        <title>
+        {% block title %}{% endblock title %} - Ontology
+        </title>
+    {% endblock head %}
     </head>
     <body>
         <main class="container page-grid">
@@ -16,10 +18,9 @@
             <div id="content">{% block content %}{% endblock content %}</div>
         </main>
         <footer>
-            {% block footer %} Built using ontology-server.rs
-            <a href="https://github.com/enioarz/ontology-server"
-                >ontology-server.rs</a
-            >. {% endblock footer %}
+            {% block footer %}
+            Built using <a href="https://github.com/enioarz/ontology-server">ontology-server.rs</a>
+            {% endblock footer %}
         </footer>
     </body>
 </html>

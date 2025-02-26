@@ -1,8 +1,16 @@
-{% extends "base.html" %} {% import "macros.html" as macros %} {% block title
-%}Index{% endblock title %} {% block head %} {{ super() }} {% endblock head %}
+{% extends "base.html" %}
+{% import "macros.html" as macros %}
+{% block title %}
+Index
+{% endblock title %}
+{% block head %}
+{{ super() }}
+{% endblock head %}
 {% block aside %}
 <div></div>
-{% endblock aside%} {% block content %} {% if label %}
+{% endblock aside%}
+{% block content %}
+{% if label %}
 <h3>{{ label}}</h3>
 {% else %}
 <h3>{{ iri }}</h3>
@@ -17,7 +25,8 @@
     <div class="definition">
         <p>{{ definition }}</p>
     </div>
-    {% endif %} {% if example %}
+    {% endif %}
+    {% if example %}
     <h5>Example</h5>
     <div class="example">
         <p>{{ example }}</p>
@@ -33,17 +42,24 @@
         <h5>Relations</h5>
         {% if super_classes %}
         <dt>Parent</dt>
-        {% for sup_enum in super_classes %}
-        <dd>{{macros::expand_entity(entity=sup_enum)}}</dd>
-        {% endfor %} {% endif %} {% if sub_classes %}
+            {% for sup_enum in super_classes %}
+            <dd>{{macros::expand_entity(entity=sup_enum)}}</dd>
+            {% endfor %}
+        {% endif %}
+        {% if sub_classes %}
         <dt>Children</dt>
-        {% for sub_enum in sub_classes %}
-        <dd>{{macros::expand_entity(entity=sub_enum)}}</dd>
-        {% endfor %} {% endif %} {% if op_range %}
+            {% for sub_enum in sub_classes %}
+            <dd>{{macros::expand_entity(entity=sub_enum)}}</dd>
+            {% endfor %}
+        {% endif %}
+        {% if op_range %}
         <dt>Range</dt>
-        <dd>{{macros::expand_entity(entity=op_range)}}</dd>
+            <dd>{{macros::expand_entity(entity=op_range)}}</dd>
         {% endif %}
     </dl>
 </div>
-{% endblock content %} {% block footer %} {{ super() }}
-<a href="/">Back to index</a>. {% endblock footer %}
+{% endblock content %}
+{% block footer %}
+{{ super() }}
+<a href="/">Back to index</a>.
+{% endblock footer %}
