@@ -55,8 +55,8 @@ struct EntityDisplay {
 struct GroupDisplay(Vec<DisplayComp>);
 
 #[derive(Serialize, Debug)]
-struct OPDisplay {
-    ope: Box<DisplayComp>,
+struct RelDisplay {
+    rel: Box<DisplayComp>,
     ce: Box<DisplayComp>,
 }
 
@@ -71,8 +71,9 @@ enum DisplayComp {
     Simple(EntityDisplay),
     And(GroupDisplay),
     Or(GroupDisplay),
-    Some(OPDisplay),
-    All(OPDisplay),
+    Some(RelDisplay),
+    Value(RelDisplay),
+    All(RelDisplay),
     Not(Box<DisplayComp>),
     Data(DPDisplay),
 }
@@ -385,7 +386,6 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
         }
         for ni in self.get_iris_for_declaration(ComponentKind::DeclareNamedIndividual) {
             let rendered_page = self.render_declaration_iri_html(&ni, pm, &label_reference)?;
-            println!("1");
             match declaration_hm.entry(ni) {
                 Entry::Occupied(o) => println!("{:?}", o),
                 Entry::Vacant(v) => {
@@ -694,12 +694,12 @@ fn unpack_class_expression<A: ForIRI>(
         ClassExpression::ObjectSomeValuesFrom { ope, bce } => {
             let ope = Box::new(unpack_object_property_expression(ope, pm, lref));
             let ce = Box::new(unpack_class_expression(*bce, pm, lref));
-            DisplayComp::Some(OPDisplay { ope, ce })
+            DisplayComp::Some(RelDisplay { rel: ope, ce })
         }
         ClassExpression::ObjectAllValuesFrom { ope, bce } => {
             let ope = Box::new(unpack_object_property_expression(ope, pm, lref));
             let ce = Box::new(unpack_class_expression(*bce, pm, lref));
-            DisplayComp::All(OPDisplay { ope, ce })
+            DisplayComp::All(RelDisplay { rel: ope, ce })
         }
         ClassExpression::ObjectHasValue {
             ope,
@@ -707,8 +707,8 @@ fn unpack_class_expression<A: ForIRI>(
         } => {
             let op = unpack_object_property_expression(ope, pm, lref);
             let ce = build_entity_display(ind.0, pm, lref);
-            DisplayComp::Some(OPDisplay {
-                ope: Box::new(op),
+            DisplayComp::Value(RelDisplay {
+                rel: Box::new(op),
                 ce: Box::new(DisplayComp::Simple(ce)),
             })
         }
