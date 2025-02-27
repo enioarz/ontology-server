@@ -19,6 +19,32 @@ use std::fmt;
 use tera::Context as TeraContext;
 use tera::Tera;
 
+lazy_static! {
+    pub static ref TEMPLATES: Tera = {
+        let mut tera = match Tera::new("templates/**/*.html") {
+            Ok(t) => t,
+            Err(e) => {
+                println!("Parsing error(s): {}", e);
+                ::std::process::exit(1);
+            }
+        };
+        tera.autoescape_on(vec![".html", ".sql"]);
+        tera
+    };
+}
+
+lazy_static! {
+    pub static ref ONTOLOGY_IRI: String = {
+        match env::var("ONTOLOGY_IRI") {
+            Ok(oi) => oi,
+            Err(_) => {
+                println!("Expected ONTOLOGY_IRI environmental variable.");
+                ::std::process::exit(1);
+            }
+        }
+    };
+}
+
 #[derive(Debug, Clone)]
 pub struct RenderError(String);
 
@@ -108,34 +134,6 @@ impl Default for SideBar {
         }
     }
 }
-
-lazy_static! {
-    pub static ref TEMPLATES: Tera = {
-        let mut tera = match Tera::new("templates/**/*.html") {
-            Ok(t) => t,
-            Err(e) => {
-                println!("Parsing error(s): {}", e);
-                ::std::process::exit(1);
-            }
-        };
-        tera.autoescape_on(vec![".html", ".sql"]);
-        tera
-    };
-}
-
-lazy_static! {
-    pub static ref ONTOLOGY_IRI: String = {
-        let oiri =  match env::var("ONTOLOGY_IRI") {
-            Ok(ii) => ii,
-            Err(_) => {
-                println!("Expected ONTOLOGY_IRI environmental variable.");
-                ::std::process::exit(1);
-            }
-        };
-        oiri
-    };
-
-    }
 
 fn unpack_annotation_value<A: ForIRI>(av: &AnnotationValue<A>) -> Option<String> {
     match &av {
@@ -749,13 +747,25 @@ fn unpack_class_expression<A: ForIRI>(
         ClassExpression::ObjectHasSelf(_) => {
             todo!("Not implemented: ObjectHasSelf")
         }
-        ClassExpression::ObjectMinCardinality { n: _, ope: _, bce: _ } => {
+        ClassExpression::ObjectMinCardinality {
+            n: _,
+            ope: _,
+            bce: _,
+        } => {
             todo!("Not implemented: ObjectMinCardinality")
         }
-        ClassExpression::ObjectMaxCardinality { n: _, ope: _, bce: _ } => {
+        ClassExpression::ObjectMaxCardinality {
+            n: _,
+            ope: _,
+            bce: _,
+        } => {
             todo!("Not implemented: ObjectMaxCardinality")
         }
-        ClassExpression::ObjectExactCardinality { n: _, ope: _, bce: _ } => {
+        ClassExpression::ObjectExactCardinality {
+            n: _,
+            ope: _,
+            bce: _,
+        } => {
             todo!("Not implemented: ObjectExactCardinality")
         }
         ClassExpression::DataSomeValuesFrom { dp: _, dr: _ } => {
