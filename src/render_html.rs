@@ -127,7 +127,7 @@ lazy_static! {
     pub static ref ONTOLOGY_IRI: String = {
         let oiri =  match env::var("ONTOLOGY_IRI") {
             Ok(ii) => ii,
-            Err(e) => {
+            Err(_) => {
                 println!("Expected ONTOLOGY_IRI environmental variable.");
                 ::std::process::exit(1);
             }
@@ -300,7 +300,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                         super_entities.push(DisplayComp::Simple(parent_display));
                     }
                 }
-                Component::SubDataPropertyOf(dp) => (),
+                Component::SubDataPropertyOf(_) => (),
                 Component::EquivalentClasses(EquivalentClasses(ecs)) => {
                     let ecx: Vec<DisplayComp> = ecs
                         .iter()
@@ -315,8 +315,8 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                         .collect();
                     equivalent_classes.extend(ecx)
                 }
-                Component::EquivalentObjectProperties(eop) => (),
-                Component::EquivalentDataProperties(edp) => (),
+                Component::EquivalentObjectProperties(_) => (),
+                Component::EquivalentDataProperties(_) => (),
                 Component::InverseObjectProperties(InverseObjectProperties(iop, iiop)) => {
                     if &iop.0 == iri {
                         let op_display = build_entity_display(iiop.0.clone(), pm, lref);
@@ -344,11 +344,11 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                         context.insert("op_domain", &ce_display);
                     }
                 }
-                Component::DisjointClasses(djc) => (),
-                Component::DisjointObjectProperties(djop) => (),
-                Component::DisjointDataProperties(djdp) => (),
-                Component::AnnotationPropertyRange(apr) => (),
-                Component::AnnotationPropertyDomain(apd) => (),
+                Component::DisjointClasses(_) => (),
+                Component::DisjointObjectProperties(_) => (),
+                Component::DisjointDataProperties(_) => (),
+                Component::AnnotationPropertyRange(_) => (),
+                Component::AnnotationPropertyDomain(_) => (),
                 Component::ClassAssertion(ClassAssertion {
                     ce,
                     i: Individual::Named(ind),
@@ -720,7 +720,7 @@ fn unpack_class_expression<A: ForIRI>(
             let ce = unpack_class_expression(*class_expression, pm, lref);
             DisplayComp::Not(Box::new(ce))
         }
-        ClassExpression::ObjectOneOf(individuals) => todo!("Not implemented: ObjectOneOf"),
+        ClassExpression::ObjectOneOf(_) => todo!("Not implemented: ObjectOneOf"),
         ClassExpression::ObjectSomeValuesFrom { ope, bce } => {
             let ope = Box::new(unpack_object_property_expression(ope, pm, lref));
             let ce = Box::new(unpack_class_expression(*bce, pm, lref));
@@ -746,22 +746,22 @@ fn unpack_class_expression<A: ForIRI>(
             i: horned_owl::model::Individual::Anonymous(_),
             ..
         } => todo!(),
-        ClassExpression::ObjectHasSelf(object_property_expression) => {
+        ClassExpression::ObjectHasSelf(_) => {
             todo!("Not implemented: ObjectHasSelf")
         }
-        ClassExpression::ObjectMinCardinality { n, ope, bce } => {
+        ClassExpression::ObjectMinCardinality { n: _, ope: _, bce: _ } => {
             todo!("Not implemented: ObjectMinCardinality")
         }
-        ClassExpression::ObjectMaxCardinality { n, ope, bce } => {
+        ClassExpression::ObjectMaxCardinality { n: _, ope: _, bce: _ } => {
             todo!("Not implemented: ObjectMaxCardinality")
         }
-        ClassExpression::ObjectExactCardinality { n, ope, bce } => {
+        ClassExpression::ObjectExactCardinality { n: _, ope: _, bce: _ } => {
             todo!("Not implemented: ObjectExactCardinality")
         }
-        ClassExpression::DataSomeValuesFrom { dp, dr } => {
+        ClassExpression::DataSomeValuesFrom { dp: _, dr: _ } => {
             todo!("Not implemented: DataSomeValuesFrom")
         }
-        ClassExpression::DataAllValuesFrom { dp, dr } => {
+        ClassExpression::DataAllValuesFrom { dp: _, dr: _ } => {
             todo!("Not implemented: DataAllValuesFrom")
         }
         ClassExpression::DataHasValue { dp, l } => {
@@ -772,13 +772,13 @@ fn unpack_class_expression<A: ForIRI>(
                 value,
             })
         }
-        ClassExpression::DataMinCardinality { n, dp, dr } => {
+        ClassExpression::DataMinCardinality { n: _, dp: _, dr: _ } => {
             todo!("Not implemented: DataMinCardinality")
         }
-        ClassExpression::DataMaxCardinality { n, dp, dr } => {
+        ClassExpression::DataMaxCardinality { n: _, dp: _, dr: _ } => {
             todo!("Not implemented: DataMaxCardinality")
         }
-        ClassExpression::DataExactCardinality { n, dp, dr } => {
+        ClassExpression::DataExactCardinality { n: _, dp: _, dr: _ } => {
             todo!("Not implemented: DataExactCardinality")
         }
     }
