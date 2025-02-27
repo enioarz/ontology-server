@@ -1,17 +1,21 @@
-use std::collections::HashMap;
-use std::collections::hash_map::Entry;
-use std::fmt;
-
 use curie::PrefixMapping;
 use eyre::{Context, Result};
 use horned_owl::model::{
-    AnnotationProperty, AnnotationSubject, AnnotationValue, Class, ClassAssertion, ClassExpression, DeclareAnnotationProperty, DeclareClass, DeclareNamedIndividual, DeclareObjectProperty, EquivalentClasses, Individual, InverseObjectProperties, Literal, NamedIndividual, ObjectProperty, ObjectPropertyDomain, ObjectPropertyExpression, ObjectPropertyRange, SubClassOf, SubObjectPropertyExpression, SubObjectPropertyOf
+    AnnotationProperty, AnnotationSubject, AnnotationValue, Class, ClassAssertion, ClassExpression,
+    DeclareAnnotationProperty, DeclareClass, DeclareNamedIndividual, DeclareObjectProperty,
+    EquivalentClasses, Individual, InverseObjectProperties, Literal, NamedIndividual,
+    ObjectProperty, ObjectPropertyDomain, ObjectPropertyExpression, ObjectPropertyRange,
+    SubClassOf, SubObjectPropertyExpression, SubObjectPropertyOf,
 };
 use horned_owl::model::{Component, ComponentKind, ForIRI, IRI};
 use horned_owl::ontology::indexed::ForIndex;
 use horned_owl::ontology::iri_mapped::IRIMappedOntology;
 use lazy_static::lazy_static;
 use serde::Serialize;
+use std::collections::HashMap;
+use std::collections::hash_map::Entry;
+use std::env;
+use std::fmt;
 use tera::Context as TeraContext;
 use tera::Tera;
 
@@ -118,6 +122,20 @@ lazy_static! {
         tera
     };
 }
+
+lazy_static! {
+    pub static ref ONTOLOGY_IRI: String = {
+        let oiri =  match env::var("ONTOLOGY_IRI") {
+            Ok(ii) => ii,
+            Err(e) => {
+                println!("Expected ONTOLOGY_IRI environmental variable.");
+                ::std::process::exit(1);
+            }
+        };
+        oiri
+    };
+
+    }
 
 fn unpack_annotation_value<A: ForIRI>(av: &AnnotationValue<A>) -> Option<String> {
     match &av {
@@ -331,12 +349,14 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                 Component::DisjointDataProperties(djdp) => (),
                 Component::AnnotationPropertyRange(apr) => (),
                 Component::AnnotationPropertyDomain(apd) => (),
-                Component::ClassAssertion(ClassAssertion{ ce, i: Individual::Named(ind)}) => {
+                Component::ClassAssertion(ClassAssertion {
+                    ce,
+                    i: Individual::Named(ind),
+                }) => {
                     if &ind.0 == iri {
                         let cexp = unpack_class_expression(ce.clone(), pm, lref);
                         class_assertions.push(cexp);
                     }
-
                 }
                 _ => (),
             }
@@ -546,8 +566,10 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
         for sco in self.component_for_kind(ComponentKind::DeclareClass) {
             match &sco.component {
                 Component::DeclareClass(DeclareClass(Class(ii))) => {
-                    let class_display = build_entity_display(ii.clone(), pm, &labels);
-                    side_bar.classes.push(class_display)
+                    if ii.contains(ONTOLOGY_IRI.as_str()) {
+                        let class_display = build_entity_display(ii.clone(), pm, &labels);
+                        side_bar.classes.push(class_display)
+                    }
                 }
                 _ => (),
             }
@@ -555,8 +577,10 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
         for nis in self.component_for_kind(ComponentKind::DeclareNamedIndividual) {
             match &nis.component {
                 Component::DeclareNamedIndividual(DeclareNamedIndividual(NamedIndividual(ii))) => {
-                    let i_display = build_entity_display(ii.clone(), pm, &labels);
-                    side_bar.named_individuals.push(i_display)
+                    if ii.contains(ONTOLOGY_IRI.as_str()) {
+                        let i_display = build_entity_display(ii.clone(), pm, &labels);
+                        side_bar.named_individuals.push(i_display)
+                    }
                 }
                 _ => (),
             }
@@ -564,8 +588,10 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
         for sco in self.component_for_kind(ComponentKind::DeclareObjectProperty) {
             match &sco.component {
                 Component::DeclareObjectProperty(DeclareObjectProperty(ObjectProperty(ii))) => {
-                    let op_display = build_entity_display(ii.clone(), pm, &labels);
-                    side_bar.object_props.push(op_display)
+                    if ii.contains(ONTOLOGY_IRI.as_str()) {
+                        let op_display = build_entity_display(ii.clone(), pm, &labels);
+                        side_bar.object_props.push(op_display)
+                    }
                 }
                 _ => (),
             }
@@ -575,8 +601,10 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                 Component::DeclareAnnotationProperty(DeclareAnnotationProperty(
                     AnnotationProperty(ii),
                 )) => {
-                    let ap_display = build_entity_display(ii.clone(), pm, &labels);
-                    side_bar.annotation_props.push(ap_display)
+                    if ii.contains(ONTOLOGY_IRI.as_str()) {
+                        let ap_display = build_entity_display(ii.clone(), pm, &labels);
+                        side_bar.annotation_props.push(ap_display)
+                    }
                 }
                 _ => (),
             }
@@ -586,21 +614,23 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
             match &sco.component {
                 Component::DeclareDataProperty(dp) => {
                     let class_iri = &dp.0.0;
-                    let iri_string = class_iri.to_string();
-                    let class_label = labels.get(class_iri).unwrap_or(&iri_string).clone();
-                    let class_identifier = if let Some(pm) = pm {
-                        match pm.shrink_iri(class_iri) {
-                            Ok(r) => r.to_string(),
-                            Err(e) => return Err(eyre::Report::msg(e)),
-                        }
-                    } else {
-                        class_label.clone()
-                    };
-                    side_bar.data_props.push(EntityDisplay::new(
-                        iri_string,
-                        class_identifier,
-                        class_label,
-                    ))
+                    if class_iri.contains(ONTOLOGY_IRI.as_str()) {
+                        let iri_string = class_iri.to_string();
+                        let class_label = labels.get(class_iri).unwrap_or(&iri_string).clone();
+                        let class_identifier = if let Some(pm) = pm {
+                            match pm.shrink_iri(class_iri) {
+                                Ok(r) => r.to_string(),
+                                Err(e) => return Err(eyre::Report::msg(e)),
+                            }
+                        } else {
+                            class_label.clone()
+                        };
+                        side_bar.data_props.push(EntityDisplay::new(
+                            iri_string,
+                            class_identifier,
+                            class_label,
+                        ))
+                    }
                 }
                 _ => (),
             }
@@ -640,15 +670,8 @@ fn build_entity_display<A: ForIRI>(
     pm: Option<&PrefixMapping>,
     lref: &HashMap<IRI<A>, String>,
 ) -> EntityDisplay {
-    let entity_id = if let Some(pm) = pm {
-        match pm.shrink_iri(iri.as_ref()) {
-            Ok(r) => {
-                let mut s = String::from("");
-                s.push_str(&r.to_string());
-                s
-            }
-            Err(_) => iri.to_string(),
-        }
+    let entity_id = if iri.contains(ONTOLOGY_IRI.as_str()) {
+        iri.replace(ONTOLOGY_IRI.as_str(), "")
     } else {
         iri.to_string()
     };
