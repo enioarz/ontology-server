@@ -21,7 +21,21 @@ use tera::Tera;
 
 lazy_static! {
     pub static ref TEMPLATES: Tera = {
-        let mut tera = match Tera::new("templates/**/*.html") {
+        let templates_dir = match env::var("TERA_TEMPLATES") {
+            Ok(dir) => {
+                let mut out = String::from(dir.trim_end_matches("/"));
+                out.push_str("/**/*.html");
+                out
+            },
+            Err(env::VarError::NotPresent) => {
+                String::from("templates/**/*.html")
+            },
+            Err(e) => {
+                println!("Parsing error(s): {}", e);
+                ::std::process::exit(1)
+            }
+        };
+        let mut tera = match Tera::new(&templates_dir) {
             Ok(t) => t,
             Err(e) => {
                 println!("Parsing error(s): {}", e);
