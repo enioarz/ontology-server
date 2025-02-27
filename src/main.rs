@@ -3,7 +3,7 @@ use eyre::Result;
 use horned_owl::io::owx::reader::read_with_build;
 use horned_owl::model::Build;
 use horned_owl::ontology::iri_mapped::ArcIRIMappedOntology;
-use hyper_ontology::render_html::IRIMappedRenderHTML;
+use hyper_ontology::render_html::{IRIMappedRenderHTML, ONTOLOGY_IRI};
 use std::env;
 use std::fs;
 use std::fs::File;
@@ -27,7 +27,6 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
 
 fn main() -> Result<()> {
     dotenv()?;
-    let ontology_iri = env::var("ONTOLOGY_IRI")?;
     let _suff = env::var("ONTOLOGY_SUFFIX")?;
     let dir = env::var("ONTOLOGY_DIR")?;
     let build = Build::new_arc();
@@ -37,7 +36,7 @@ fn main() -> Result<()> {
     assert!(r.is_ok(), "Expected ontology, got failure:{:?}", r.err());
     let (o, mut pm) = r.ok().unwrap();
     let mut oc: ArcIRIMappedOntology = ArcIRIMappedOntology::from(o);
-    pm.set_default(&ontology_iri);
+    pm.set_default(ONTOLOGY_IRI.as_str());
     pm.add_prefix("skos", "http://www.w3.org/2004/02/skos/core#")
         .unwrap();
     pm.add_prefix("dct", "http://purl.org/dc/terms/").unwrap();
