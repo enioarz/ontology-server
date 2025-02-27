@@ -5,7 +5,11 @@ use std::fmt;
 use curie::PrefixMapping;
 use eyre::{Context, Result};
 use horned_owl::model::{
-    AnnotationProperty, AnnotationSubject, AnnotationValue, Class, ClassExpression, DeclareAnnotationProperty, DeclareClass, DeclareObjectProperty, EquivalentClasses, InverseObjectProperties, Literal, ObjectProperty, ObjectPropertyDomain, ObjectPropertyExpression, ObjectPropertyRange, SubAnnotationPropertyOf, SubClassOf, SubObjectPropertyExpression, SubObjectPropertyOf
+    AnnotationProperty, AnnotationSubject, AnnotationValue, Class, ClassExpression,
+    DeclareAnnotationProperty, DeclareClass, DeclareNamedIndividual, DeclareObjectProperty,
+    EquivalentClasses, Individual, InverseObjectProperties, Literal, NamedIndividual,
+    ObjectProperty, ObjectPropertyDomain, ObjectPropertyExpression, ObjectPropertyRange,
+    SubClassOf, SubObjectPropertyExpression, SubObjectPropertyOf,
 };
 use horned_owl::model::{Component, ComponentKind, ForIRI, IRI};
 use horned_owl::ontology::indexed::ForIndex;
@@ -29,6 +33,7 @@ enum Kind {
     Class,
     ObjectProperty,
     AnnotationProperty,
+    NamedIndividual,
     Undefined,
 }
 
@@ -56,6 +61,12 @@ struct OPDisplay {
 }
 
 #[derive(Serialize, Debug)]
+struct DPDisplay {
+    dp: Box<DisplayComp>,
+    value: String,
+}
+
+#[derive(Serialize, Debug)]
 enum DisplayComp {
     Simple(EntityDisplay),
     And(GroupDisplay),
@@ -63,6 +74,7 @@ enum DisplayComp {
     Some(OPDisplay),
     All(OPDisplay),
     Not(Box<DisplayComp>),
+    Data(DPDisplay),
 }
 
 impl EntityDisplay {
@@ -78,6 +90,7 @@ impl EntityDisplay {
 #[derive(Serialize, Debug)]
 pub struct SideBar {
     classes: Vec<EntityDisplay>,
+    named_individuals: Vec<EntityDisplay>,
     annotation_props: Vec<EntityDisplay>,
     data_props: Vec<EntityDisplay>,
     object_props: Vec<EntityDisplay>,
@@ -87,6 +100,7 @@ impl Default for SideBar {
     fn default() -> Self {
         SideBar {
             classes: vec![],
+            named_individuals: vec![],
             annotation_props: vec![],
             data_props: vec![],
             object_props: vec![],
@@ -188,6 +202,11 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                     this_kind = Kind::AnnotationProperty;
                     context.insert("kind", "annotation-property")
                 }
+                Component::DeclareNamedIndividual(ni) => {
+                    context.insert("iri", ni.0.0.as_ref());
+                    this_kind = Kind::NamedIndividual;
+                    context.insert("kind", "named-individual")
+                }
                 Component::AnnotationAssertion(aa) => match aa.ann.ap.0.as_ref() {
                     "http://www.w3.org/2000/01/rdf-schema#label" => context.insert(
                         "label",
@@ -268,29 +287,29 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                 Component::SubDataPropertyOf(dp) => (),
                 Component::EquivalentClasses(EquivalentClasses(ecs)) => {
                     let ecx: Vec<DisplayComp> = ecs
-                                            .iter()
-                                            .map(|e| unpack_class_expression(e.clone(), pm, lref))
-                                            .filter(|ex| if let DisplayComp::Simple(e)  = ex {
-                                                !(&e.iri == iri.as_ref())
-                                            } else {
-                                                true
-                                            })
-                                            .collect();
-                    println!("{:#?}", ecs);
+                        .iter()
+                        .map(|e| unpack_class_expression(e.clone(), pm, lref))
+                        .filter(|ex| {
+                            if let DisplayComp::Simple(e) = ex {
+                                !(&e.iri == iri.as_ref())
+                            } else {
+                                true
+                            }
+                        })
+                        .collect();
                     equivalent_classes.extend(ecx)
-
-                },
+                }
                 Component::EquivalentObjectProperties(eop) => (),
                 Component::EquivalentDataProperties(edp) => (),
                 Component::InverseObjectProperties(InverseObjectProperties(iop, iiop)) => {
                     if &iop.0 == iri {
                         let op_display = build_entity_display(iiop.0.clone(), pm, lref);
                         inverse_ops.push(DisplayComp::Simple(op_display));
-                    } else if  &iiop.0 == iri {
+                    } else if &iiop.0 == iri {
                         let op_display = build_entity_display(iop.0.clone(), pm, lref);
                         inverse_ops.push(DisplayComp::Simple(op_display));
                     }
-                },
+                }
                 Component::ObjectPropertyRange(ObjectPropertyRange {
                     ope: ObjectPropertyExpression::ObjectProperty(ObjectProperty(ii)),
                     ce,
@@ -308,7 +327,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                         let ce_display = unpack_class_expression(ce.clone(), pm, lref);
                         context.insert("op_domain", &ce_display);
                     }
-                },
+                }
                 Component::DisjointClasses(djc) => (),
                 Component::DisjointObjectProperties(djop) => (),
                 Component::DisjointDataProperties(djdp) => (),
@@ -340,6 +359,9 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
             Kind::AnnotationProperty => TEMPLATES
                 .render("entity.html", &context)
                 .wrap_err("Could not render ann prop page"),
+            Kind::NamedIndividual => TEMPLATES
+                .render("entity.html", &context)
+                .wrap_err("Could not render ann prop page"),
             Kind::Undefined => {
                 Err(tera::Error::msg("Not implemented")).wrap_err("Unkown entity kind")
             }
@@ -355,6 +377,16 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
         for cl in self.get_iris_for_declaration(ComponentKind::DeclareClass) {
             let rendered_page = self.render_declaration_iri_html(&cl, pm, &label_reference)?;
             match declaration_hm.entry(cl) {
+                Entry::Occupied(o) => println!("{:?}", o),
+                Entry::Vacant(v) => {
+                    v.insert(rendered_page);
+                }
+            }
+        }
+        for ni in self.get_iris_for_declaration(ComponentKind::DeclareNamedIndividual) {
+            let rendered_page = self.render_declaration_iri_html(&ni, pm, &label_reference)?;
+            println!("1");
+            match declaration_hm.entry(ni) {
                 Entry::Occupied(o) => println!("{:?}", o),
                 Entry::Vacant(v) => {
                     v.insert(rendered_page);
@@ -395,6 +427,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
         self.component_for_kind(component_kind)
             .map(|dc| match &dc.component {
                 Component::DeclareClass(dc) => Some(dc.0.0.clone()),
+                Component::DeclareNamedIndividual(ni) => Some(ni.0.0.clone()),
                 Component::DeclareDataProperty(ddp) => Some(ddp.0.0.clone()),
                 Component::DeclareObjectProperty(dop) => Some(dop.0.0.clone()),
                 Component::DeclareAnnotationProperty(dap) => Some(dap.0.0.clone()),
@@ -512,6 +545,15 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                 _ => (),
             }
         }
+        for nis in self.component_for_kind(ComponentKind::DeclareNamedIndividual) {
+            match &nis.component {
+                Component::DeclareNamedIndividual(DeclareNamedIndividual(NamedIndividual(ii))) => {
+                    let i_display = build_entity_display(ii.clone(), pm, &labels);
+                    side_bar.named_individuals.push(i_display)
+                }
+                _ => (),
+            }
+        }
         for sco in self.component_for_kind(ComponentKind::DeclareObjectProperty) {
             match &sco.component {
                 Component::DeclareObjectProperty(DeclareObjectProperty(ObjectProperty(ii))) => {
@@ -572,6 +614,17 @@ fn get_annotation_value<A: ForIRI>(av: &AnnotationValue<A>) -> Option<&str> {
             } => Some(literal),
         },
         AnnotationValue::IRI(ii) => Some(ii),
+    }
+}
+
+fn unpack_literal<A: ForIRI>(l: Literal<A>) -> String {
+    match l {
+        Literal::Simple { literal } => literal,
+        Literal::Language { literal, lang: _ } => literal,
+        Literal::Datatype {
+            literal,
+            datatype_iri: _,
+        } => literal,
     }
 }
 
@@ -648,17 +701,56 @@ fn unpack_class_expression<A: ForIRI>(
             let ce = Box::new(unpack_class_expression(*bce, pm, lref));
             DisplayComp::All(OPDisplay { ope, ce })
         }
-        ClassExpression::ObjectHasValue { ope, i } => todo!("Not implemented: ObjectHasValue"),
-        ClassExpression::ObjectHasSelf(object_property_expression) => todo!("Not implemented: ObjectHasSelf"),
-        ClassExpression::ObjectMinCardinality { n, ope, bce } => todo!("Not implemented: ObjectMinCardinality"),
-        ClassExpression::ObjectMaxCardinality { n, ope, bce } => todo!("Not implemented: ObjectMaxCardinality"),
-        ClassExpression::ObjectExactCardinality { n, ope, bce } => todo!("Not implemented: ObjectExactCardinality"),
-        ClassExpression::DataSomeValuesFrom { dp, dr } => todo!("Not implemented: DataSomeValuesFrom"),
-        ClassExpression::DataAllValuesFrom { dp, dr } => todo!("Not implemented: DataAllValuesFrom"),
-        ClassExpression::DataHasValue { dp, l } => todo!("Not implemnted: DataHasValue"),
-        ClassExpression::DataMinCardinality { n, dp, dr } => todo!("Not implemented: DataMinCardinality"),
-        ClassExpression::DataMaxCardinality { n, dp, dr } => todo!("Not implemented: DataMaxCardinality"),
-        ClassExpression::DataExactCardinality { n, dp, dr } => todo!("Not implemented: DataExactCardinality"),
+        ClassExpression::ObjectHasValue {
+            ope,
+            i: Individual::Named(ind),
+        } => {
+            let op = unpack_object_property_expression(ope, pm, lref);
+            let ce = build_entity_display(ind.0, pm, lref);
+            DisplayComp::Some(OPDisplay {
+                ope: Box::new(op),
+                ce: Box::new(DisplayComp::Simple(ce)),
+            })
+        }
+        ClassExpression::ObjectHasValue {
+            i: horned_owl::model::Individual::Anonymous(_),
+            ..
+        } => todo!(),
+        ClassExpression::ObjectHasSelf(object_property_expression) => {
+            todo!("Not implemented: ObjectHasSelf")
+        }
+        ClassExpression::ObjectMinCardinality { n, ope, bce } => {
+            todo!("Not implemented: ObjectMinCardinality")
+        }
+        ClassExpression::ObjectMaxCardinality { n, ope, bce } => {
+            todo!("Not implemented: ObjectMaxCardinality")
+        }
+        ClassExpression::ObjectExactCardinality { n, ope, bce } => {
+            todo!("Not implemented: ObjectExactCardinality")
+        }
+        ClassExpression::DataSomeValuesFrom { dp, dr } => {
+            todo!("Not implemented: DataSomeValuesFrom")
+        }
+        ClassExpression::DataAllValuesFrom { dp, dr } => {
+            todo!("Not implemented: DataAllValuesFrom")
+        }
+        ClassExpression::DataHasValue { dp, l } => {
+            let dpd = build_entity_display(dp.0, pm, lref);
+            let value = unpack_literal(l);
+            DisplayComp::Data(DPDisplay {
+                dp: Box::new(DisplayComp::Simple(dpd)),
+                value,
+            })
+        }
+        ClassExpression::DataMinCardinality { n, dp, dr } => {
+            todo!("Not implemented: DataMinCardinality")
+        }
+        ClassExpression::DataMaxCardinality { n, dp, dr } => {
+            todo!("Not implemented: DataMaxCardinality")
+        }
+        ClassExpression::DataExactCardinality { n, dp, dr } => {
+            todo!("Not implemented: DataExactCardinality")
+        }
     }
 }
 
@@ -675,6 +767,6 @@ fn unpack_object_property_expression<A: ForIRI>(
         ObjectPropertyExpression::InverseObjectProperty(object_property) => {
             let op_display = build_entity_display(object_property.0.clone(), pm, lref);
             DisplayComp::Simple(op_display)
-        },
+        }
     }
 }
