@@ -72,6 +72,12 @@ Index
             <dd>{{macros::expand_entity(entity=op)}}</dd>
             {% endfor %}
         {% endif %}
+        {% if class_assertions %}
+        <dt>Instance Of</dt>
+            {% for cas in class_assertions %}
+            <dd>{{macros::expand_entity(entity=cas)}}</dd>
+            {% endfor %}
+        {% endif %}
     </dl>
 </div>
 {% endblock content %}

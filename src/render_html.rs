@@ -5,11 +5,7 @@ use std::fmt;
 use curie::PrefixMapping;
 use eyre::{Context, Result};
 use horned_owl::model::{
-    AnnotationProperty, AnnotationSubject, AnnotationValue, Class, ClassExpression,
-    DeclareAnnotationProperty, DeclareClass, DeclareNamedIndividual, DeclareObjectProperty,
-    EquivalentClasses, Individual, InverseObjectProperties, Literal, NamedIndividual,
-    ObjectProperty, ObjectPropertyDomain, ObjectPropertyExpression, ObjectPropertyRange,
-    SubClassOf, SubObjectPropertyExpression, SubObjectPropertyOf,
+    AnnotationProperty, AnnotationSubject, AnnotationValue, Class, ClassAssertion, ClassExpression, DeclareAnnotationProperty, DeclareClass, DeclareNamedIndividual, DeclareObjectProperty, EquivalentClasses, Individual, InverseObjectProperties, Literal, NamedIndividual, ObjectProperty, ObjectPropertyDomain, ObjectPropertyExpression, ObjectPropertyRange, SubClassOf, SubObjectPropertyExpression, SubObjectPropertyOf
 };
 use horned_owl::model::{Component, ComponentKind, ForIRI, IRI};
 use horned_owl::ontology::indexed::ForIndex;
@@ -184,6 +180,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
         let mut inverse_ops: Vec<DisplayComp> = vec![];
         let mut sub_entities: Vec<DisplayComp> = vec![];
         let mut equivalent_classes: Vec<DisplayComp> = vec![];
+        let mut class_assertions: Vec<DisplayComp> = vec![];
         for ann_cmp in self.components_for_iri(&iri) {
             let _ann = &ann_cmp.ann; // May add annotations later
             let cmp = &ann_cmp.component;
@@ -334,6 +331,13 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                 Component::DisjointDataProperties(djdp) => (),
                 Component::AnnotationPropertyRange(apr) => (),
                 Component::AnnotationPropertyDomain(apd) => (),
+                Component::ClassAssertion(ClassAssertion{ ce, i: Individual::Named(ind)}) => {
+                    if &ind.0 == iri {
+                        let cexp = unpack_class_expression(ce.clone(), pm, lref);
+                        class_assertions.push(cexp);
+                    }
+
+                }
                 _ => (),
             }
         }
@@ -348,6 +352,9 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
         }
         if equivalent_classes.len() > 0 {
             context.insert("equivalent_classes", &equivalent_classes);
+        }
+        if class_assertions.len() > 0 {
+            context.insert("class_assertions", &class_assertions);
         }
         context.insert("annotations", &annotations);
         match this_kind {
