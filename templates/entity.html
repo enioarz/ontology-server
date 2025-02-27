@@ -52,6 +52,12 @@ Index
             <dd> {{macros::expand_entity(entity=sub_enum)}}</dd>
             {% endfor %}
         {% endif %}
+        {% if equivalent_classes %}
+        <dt>Equivalent Classes</dt>
+            {% for ec in equivalent_classes %}
+            <dd>{{macros::expand_entity(entity=ec)}}</dd>
+            {% endfor %}
+        {% endif %}
         {% if op_range %}
         <dt>Range</dt>
             <dd>{{macros::expand_entity(entity=op_range)}}</dd>

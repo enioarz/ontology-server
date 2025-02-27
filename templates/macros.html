@@ -27,7 +27,7 @@
         {% if depth > 0 %} ) {% endif %}
     {% elif entity.Some %}
         {% if depth > 0 %} ( {% endif %}
-        {{ self::expand_entity(entity=entity.Some.opev) }} <span style="font-weight: bold">some</span> {{ self::expand_entity(entity=entity.Some.ce, depth=depth+1) }}
+        {{ self::expand_entity(entity=entity.Some.ope) }} <span style="font-weight: bold">some</span> {{ self::expand_entity(entity=entity.Some.ce, depth=depth+1) }}
         {% if depth > 0 %} ) {% endif %}
     {% elif entity.Not %}
         {% if depth > 0 %} ( {% endif %}

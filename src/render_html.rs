@@ -168,6 +168,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
         let mut super_entities: Vec<DisplayComp> = vec![];
         let mut inverse_ops: Vec<DisplayComp> = vec![];
         let mut sub_entities: Vec<DisplayComp> = vec![];
+        let mut equivalent_classes: Vec<DisplayComp> = vec![];
         for ann_cmp in self.components_for_iri(&iri) {
             let _ann = &ann_cmp.ann; // May add annotations later
             let cmp = &ann_cmp.component;
@@ -269,7 +270,14 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
                     let ecx: Vec<DisplayComp> = ecs
                                             .iter()
                                             .map(|e| unpack_class_expression(e.clone(), pm, lref))
+                                            .filter(|ex| if let DisplayComp::Simple(e)  = ex {
+                                                !(&e.iri == iri.as_ref())
+                                            } else {
+                                                true
+                                            })
                                             .collect();
+                    println!("{:#?}", ecs);
+                    equivalent_classes.extend(ecx)
 
                 },
                 Component::EquivalentObjectProperties(eop) => (),
@@ -317,6 +325,9 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for IRIMappedOntology<A,
         }
         if inverse_ops.len() > 0 {
             context.insert("inverse_ops", &inverse_ops);
+        }
+        if equivalent_classes.len() > 0 {
+            context.insert("equivalent_classes", &equivalent_classes);
         }
         context.insert("annotations", &annotations);
         match this_kind {
@@ -626,7 +637,7 @@ fn unpack_class_expression<A: ForIRI>(
             let ce = unpack_class_expression(*class_expression, pm, lref);
             DisplayComp::Not(Box::new(ce))
         }
-        ClassExpression::ObjectOneOf(individuals) => todo!(),
+        ClassExpression::ObjectOneOf(individuals) => todo!("Not implemented: ObjectOneOf"),
         ClassExpression::ObjectSomeValuesFrom { ope, bce } => {
             let ope = Box::new(unpack_object_property_expression(ope, pm, lref));
             let ce = Box::new(unpack_class_expression(*bce, pm, lref));
@@ -637,17 +648,17 @@ fn unpack_class_expression<A: ForIRI>(
             let ce = Box::new(unpack_class_expression(*bce, pm, lref));
             DisplayComp::All(OPDisplay { ope, ce })
         }
-        ClassExpression::ObjectHasValue { ope, i } => todo!(),
-        ClassExpression::ObjectHasSelf(object_property_expression) => todo!(),
-        ClassExpression::ObjectMinCardinality { n, ope, bce } => todo!(),
-        ClassExpression::ObjectMaxCardinality { n, ope, bce } => todo!(),
-        ClassExpression::ObjectExactCardinality { n, ope, bce } => todo!(),
-        ClassExpression::DataSomeValuesFrom { dp, dr } => todo!(),
-        ClassExpression::DataAllValuesFrom { dp, dr } => todo!(),
-        ClassExpression::DataHasValue { dp, l } => todo!(),
-        ClassExpression::DataMinCardinality { n, dp, dr } => todo!(),
-        ClassExpression::DataMaxCardinality { n, dp, dr } => todo!(),
-        ClassExpression::DataExactCardinality { n, dp, dr } => todo!(),
+        ClassExpression::ObjectHasValue { ope, i } => todo!("Not implemented: ObjectHasValue"),
+        ClassExpression::ObjectHasSelf(object_property_expression) => todo!("Not implemented: ObjectHasSelf"),
+        ClassExpression::ObjectMinCardinality { n, ope, bce } => todo!("Not implemented: ObjectMinCardinality"),
+        ClassExpression::ObjectMaxCardinality { n, ope, bce } => todo!("Not implemented: ObjectMaxCardinality"),
+        ClassExpression::ObjectExactCardinality { n, ope, bce } => todo!("Not implemented: ObjectExactCardinality"),
+        ClassExpression::DataSomeValuesFrom { dp, dr } => todo!("Not implemented: DataSomeValuesFrom"),
+        ClassExpression::DataAllValuesFrom { dp, dr } => todo!("Not implemented: DataAllValuesFrom"),
+        ClassExpression::DataHasValue { dp, l } => todo!("Not implemnted: DataHasValue"),
+        ClassExpression::DataMinCardinality { n, dp, dr } => todo!("Not implemented: DataMinCardinality"),
+        ClassExpression::DataMaxCardinality { n, dp, dr } => todo!("Not implemented: DataMaxCardinality"),
+        ClassExpression::DataExactCardinality { n, dp, dr } => todo!("Not implemented: DataExactCardinality"),
     }
 }
 
