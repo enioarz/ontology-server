@@ -103,11 +103,7 @@ head %} {{ super() }}
         {% endfor %}
     </dl>
     {% endif %} {% if sidebar %}
-    <div
-        xmlns:widoco="https://w3id.org/widoco/vocab#"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        id="klsses"
-    >
+    <div id="klsses">
         <h3 id="classes-headline" class="list">Classes</h3>
         {% for cls in sidebar.classes %}
         <h4><a href="/{{ cls.identifier }}.html">{{ cls.display }}</a></h4>
@@ -122,11 +118,7 @@ head %} {{ super() }}
         </div>
         {% endfor %}
     </div>
-    <div
-        xmlns:widoco="https://w3id.org/widoco/vocab#"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        id="named-individuals"
-    >
+    <div id="named-individuals">
         <h3 id="ninds-headline" class="list">Named Individuals</h3>
         {% for ninds in sidebar.named_individuals %}
         <h4><a href="/{{ ninds.identifier }}.html">{{ ninds.display }}</a></h4>
@@ -141,11 +133,7 @@ head %} {{ super() }}
         </div>
         {% endfor %}
     </div>
-    <div
-        xmlns:widoco="https://w3id.org/widoco/vocab#"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        id="object-properties"
-    >
+    <div id="object-properties">
         <h3 id="classes-headline" class="list">Object Properties</h3>
         {% for op in sidebar.object_props %}
         <h4><a href="/{{ op.identifier }}.html">{{ op.display }}</a></h4>
