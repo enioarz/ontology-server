@@ -26,10 +26,8 @@ lazy_static! {
                 let mut out = String::from(dir.trim_end_matches("/"));
                 out.push_str("/**/*.html");
                 out
-            },
-            Err(env::VarError::NotPresent) => {
-                String::from("templates/**/*.html")
-            },
+            }
+            Err(env::VarError::NotPresent) => String::from("templates/**/*.html"),
             Err(e) => {
                 println!("Parsing error(s): {}", e);
                 ::std::process::exit(1)
