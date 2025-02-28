@@ -4,7 +4,7 @@ use horned_owl::io::ParserConfiguration;
 use horned_owl::io::RDFParserConfiguration;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Debug, Serialize)]
+#[derive(Deserialize, Debug, Serialize, Clone)]
 #[allow(unused)]
 pub struct OntologyConfig {
     pub iri: String,
@@ -12,6 +12,11 @@ pub struct OntologyConfig {
     pub suffix: Option<String>,
 }
 
+#[derive(Deserialize, Debug, Serialize, Clone)]
+#[allow(unused)]
+pub struct BuildConfig {
+    pub render: bool,
+}
 #[derive(Deserialize, Debug, Serialize)]
 #[allow(unused)]
 pub struct Settings {
@@ -19,6 +24,7 @@ pub struct Settings {
     pub baseurl: Option<String>,
     pub import: Option<Vec<OntologyConfig>>,
     pub templates: Option<String>,
+    pub build: Option<BuildConfig>,
 }
 
 pub fn parser_config(matches: &ArgMatches) -> ParserConfiguration {

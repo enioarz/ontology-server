@@ -9,6 +9,7 @@ use figment::{
     Figment,
     providers::{Env, Format, Serialized, Toml},
 };
+use hyper_ontology::config::BuildConfig;
 use hyper_ontology::config::{OntologyConfig, Settings};
 use hyper_ontology::render_html::ArcOntologyRender;
 use hyper_ontology::render_html::IRIMappedRenderHTML;
@@ -19,11 +20,10 @@ fn main() -> Result<()> {
     let cl = cli();
     let matches = cl.get_matches();
     match matches.subcommand() {
-        Some(("build", _)) => {
+        Some(("build", sms)) => {
             let settings = parser_app(Some(&matches))?;
             let mut or = ArcOntologyRender::new_with_settings(settings)?;
-
-            let hm = or.render_all_declarations_html(None)?;
+            let hm = or.render_all_declarations_html()?;
             fs::create_dir_all("public").unwrap_or(println!("Folder already exist"));
             for (k, v) in hm.iter() {
                 match or.prefix_mapping.shrink_iri(k) {
@@ -43,6 +43,33 @@ fn main() -> Result<()> {
             }
             fs::write("public/index.html", or.render_metadata_html(None).unwrap()).unwrap();
             copy_dir_all("static", "public/static")?;
+            if sms.get_flag("Render") {
+                if let Some(im) = &or.settings.import.clone() {
+                    for n in im.iter() {
+                        if let Some(p) = &n.suffix {
+                            fs::create_dir_all(format!("public/{p}"))
+                                .unwrap_or(println!("Folder already exist"));
+                            for (k, v) in hm.iter() {
+                                match or.prefix_mapping.shrink_iri(k) {
+                                    Ok(i) => {
+                                        let is = i.to_string();
+                                        if is.contains(p) {
+                                            let iss = is.replace(":", "/");
+                                            fs::write(format!("public/{}.html", iss), v).unwrap();
+                                        }
+                                    }
+                                    Err(_) => (),
+                                }
+                            }
+                            fs::write(
+                                format!("public/{p}/index.html"),
+                                or.render_metadata_html(Some(&n.iri)).unwrap(),
+                            )
+                            .unwrap();
+                        }
+                    }
+                }
+            }
         }
         _ => {
             let mut help = cli();
@@ -120,6 +147,13 @@ pub fn parser_app(m: Option<&ArgMatches>) -> Result<Settings> {
             },
             None => imports,
         };
+        let cli_build = if let Some(("build", sms)) = matches.subcommand() {
+            BuildConfig {
+                render: sms.get_flag("Render"),
+            }
+        } else {
+            BuildConfig { render: false }
+        };
         let cli_settings = Settings {
             baseurl: if let Some(u) = matches.get_one("URL").map(|m: &String| String::from(m)) {
                 Some(u)
@@ -154,6 +188,7 @@ pub fn parser_app(m: Option<&ArgMatches>) -> Result<Settings> {
             } else {
                 settings.templates.clone()
             },
+            build: Some(cli_build),
         };
         Figment::new().merge(Serialized::defaults(cli_settings))
     } else {

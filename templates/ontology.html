@@ -1,16 +1,12 @@
-{% extends "base.html" %}
-{% block title %}Index{% endblock title %}
-{% block head %}
-{{ super() }}
+{% extends "base.html" %} {% block title %}Index{% endblock title %} {% block
+head %} {{ super() }}
 <style type="text/css">
     .important {
         color: #336699;
     }
 </style>
-<script src="./static/scripts/htmx.js"></script>
-{% endblock head %}
-{% block aside %}
-{% if sidebar %}
+<script src="/static/scripts/htmx.js"></script>
+{% endblock head %} {% block aside %} {% if sidebar %}
 <aside style="position: sticky">
     <nav id="side-nav" class="is-sticky-above-lg">
         <ul id="entities-sidebar">
@@ -23,7 +19,9 @@
                 </ul>
             </li>
             <li>
-                <h4 class="caret"><a href="#ninds-headline">Named Individuals</a></h4>
+                <h4 class="caret">
+                    <a href="#ninds-headline">Named Individuals</a>
+                </h4>
                 <ul class="nested">
                     {% for ind in sidebar.named_individuals %}
                     <li><a href="#{{ ind.iri }}">{{ ind.display }}</a></li>
@@ -57,10 +55,7 @@
         </ul>
     </nav>
 </aside>
-{% endif %}
-{% endblock aside %}
-{% block content %}
-    {% if iri %}
+{% endif %} {% endblock aside %} {% block content %} {% if iri %}
 <header class="is-fixed-above-lg">
     {% if title %}
     <h1>{{ title }}</h1>
