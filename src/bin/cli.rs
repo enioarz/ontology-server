@@ -23,7 +23,7 @@ fn main() -> Result<()> {
             let settings = parser_app(Some(&matches))?;
             let mut or = ArcOntologyRender::new_with_settings(settings)?;
 
-            let hm = or.render_all_declarations_html()?;
+            let hm = or.render_all_declarations_html(None)?;
             fs::create_dir_all("public").unwrap_or(println!("Folder already exist"));
             for (k, v) in hm.iter() {
                 match or.prefix_mapping.shrink_iri(k) {
@@ -41,7 +41,7 @@ fn main() -> Result<()> {
                     Err(_) => (),
                 }
             }
-            fs::write("public/index.html", or.render_metadata_html().unwrap()).unwrap();
+            fs::write("public/index.html", or.render_metadata_html(None).unwrap()).unwrap();
             copy_dir_all("static", "public/static")?;
         }
         _ => {
@@ -209,22 +209,19 @@ fn cli() -> Command {
                 .long("import")
                 .action(ArgAction::Append)
                 .help("Imported ontologies to render. Expects 'prefix:iri' syntax.")
-                .group("general")
+                .group("general"),
         ])
         .subcommand(
             clap::command!("build")
                 .about("Build ontology static files.")
                 .args([
-                    Arg::new("empty")
-                        .long("empty")
-                        .action(ArgAction::Append)
-                        .help("File is empty and is either a regular file or a directory")
-                        .group("build"),
-                    Arg::new("name")
-                        .long("name")
-                        .action(ArgAction::Append)
-                        .help("Base of file name (the path with the leading directories removed) matches shell pattern pattern")
-                        .group("build")
+                    Arg::new("Render")
+                        .long("render_imports")
+                        .short('r')
+                        .action(ArgAction::SetTrue)
+                        .help("Render Imports.")
+                        .group("general"),
+
                 ])
         )
         .subcommand_help_heading("Commands")

@@ -144,33 +144,33 @@ impl Default for SideBar {
 }
 
 pub trait IRIMappedRenderHTML<A: ForIRI> {
-    fn render_declaration_iri_html(&mut self, _: &IRI<A>) -> Result<String> {
+    fn render_declaration_iri_html(&mut self, _: &IRI<A>, _ : Option<&str>) -> Result<String> {
         Err(eyre::Report::msg("Not implemented"))
     }
 
-    fn render_all_declarations_html(&mut self) -> Result<HashMap<IRI<A>, String>> {
+    fn render_all_declarations_html(&mut self, _: Option<&str>) -> Result<HashMap<IRI<A>, String>> {
         Err(eyre::Report::msg("Not implemented"))
     }
-    fn render_metadata_html(&mut self) -> Result<String> {
+    fn render_metadata_html(&mut self, _: Option<&str>) -> Result<String> {
         Err(eyre::Report::msg("Not implemented"))
     }
 
     fn get_iris_for_declaration(&mut self, _: ComponentKind) -> Vec<IRI<A>> {
         vec![]
     }
-    fn collect_entity_tree(&mut self) -> Result<SideBar> {
+    fn collect_entity_tree(&mut self, _: Option<&str>) -> Result<SideBar> {
         Err(eyre::Report::msg("Error when rendering tree"))
     }
 
-    fn build_entity_display(&self, _: IRI<A>) -> EntityDisplay {
+    fn build_entity_display(&self, _: IRI<A>, _: &str) -> EntityDisplay {
         todo!("build_entity_display has to be implemented")
     }
 
-    fn unpack_class_expression(&self, _: ClassExpression<A>) -> DisplayComp {
+    fn unpack_class_expression(&self, _: ClassExpression<A>, _: Option<&str>) -> DisplayComp {
         todo!("unpack_class_expression is not implemented",)
     }
 
-    fn unpack_object_property_expression(&self, _: ObjectPropertyExpression<A>) -> DisplayComp {
+    fn unpack_object_property_expression(&self, _: ObjectPropertyExpression<A>, _: Option<&str>) -> DisplayComp {
         todo!()
     }
 }
@@ -186,7 +186,11 @@ pub type RcOntologyRender = OntologyRender<RcStr, Rc<AnnotatedComponent<RcStr>>>
 pub type ArcOntologyRender = OntologyRender<ArcStr, Arc<AnnotatedComponent<ArcStr>>>;
 
 impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA> {
-    fn render_declaration_iri_html(&mut self, iri: &IRI<A>) -> Result<String> {
+    fn render_declaration_iri_html(&mut self, iri: &IRI<A>, base: Option<&str>) -> Result<String> {
+        let b = match base {
+            Some(s) => s,
+            None => &self.settings.ontology.iri
+        };
         let mut context = TeraContext::new();
         let mut annotations: Vec<OntologyAnnotation> = vec![];
         let mut this_kind: Kind = Kind::Undefined;
@@ -258,10 +262,10 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
                     sub: ClassExpression::Class(subc),
                 }) => {
                     if &spc.0 == iri {
-                        let child_display = self.build_entity_display(subc.0.clone());
+                        let child_display = self.build_entity_display(subc.0.clone(), &self.settings.ontology.iri);
                         sub_entities.push(DisplayComp::Simple(child_display))
                     } else if &subc.0 == iri {
-                        let parent_display = self.build_entity_display(spc.0.clone());
+                        let parent_display = self.build_entity_display(spc.0.clone(), b);
                         super_entities.push(DisplayComp::Simple(parent_display));
                     }
                 }
@@ -270,7 +274,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
                     sub: ClassExpression::Class(subc),
                 }) => {
                     if &subc.0 == iri {
-                        let class_display = self.unpack_class_expression(sup.clone());
+                        let class_display = self.unpack_class_expression(sup.clone(), Some(b));
                         super_entities.push(class_display);
                     }
                 }
@@ -279,7 +283,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
                     sub,
                 }) => {
                     if &supc.0 == iri {
-                        let class_display = self.unpack_class_expression(sub.clone());
+                        let class_display = self.unpack_class_expression(sub.clone(), Some(b));
                         sub_entities.push(class_display);
                     }
                 }
@@ -291,10 +295,10 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
                         ),
                 }) => {
                     if &sup.0 == iri {
-                        let child_display = self.build_entity_display(sub.0.clone());
+                        let child_display = self.build_entity_display(sub.0.clone(), b);
                         sub_entities.push(DisplayComp::Simple(child_display))
                     } else if &sup.0 == iri {
-                        let parent_display = self.build_entity_display(sub.0.clone());
+                        let parent_display = self.build_entity_display(sub.0.clone(), b);
                         super_entities.push(DisplayComp::Simple(parent_display));
                     }
                 }
@@ -302,7 +306,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
                 Component::EquivalentClasses(EquivalentClasses(ecs)) => {
                     let ecx: Vec<DisplayComp> = ecs
                         .iter()
-                        .map(|e| self.unpack_class_expression(e.clone()))
+                        .map(|e| self.unpack_class_expression(e.clone(), Some(b)))
                         .filter(|ex| {
                             if let DisplayComp::Simple(e) = ex {
                                 !(&e.iri == iri.as_ref())
@@ -317,10 +321,10 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
                 Component::EquivalentDataProperties(_) => (),
                 Component::InverseObjectProperties(InverseObjectProperties(iop, iiop)) => {
                     if &iop.0 == iri {
-                        let op_display = self.build_entity_display(iiop.0.clone());
+                        let op_display = self.build_entity_display(iiop.0.clone(),b);
                         inverse_ops.push(DisplayComp::Simple(op_display));
                     } else if &iiop.0 == iri {
-                        let op_display = self.build_entity_display(iop.0.clone());
+                        let op_display = self.build_entity_display(iop.0.clone(),b);
                         inverse_ops.push(DisplayComp::Simple(op_display));
                     }
                 }
@@ -329,7 +333,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
                     ce,
                 }) => {
                     if ii == iri {
-                        let ce_display = self.unpack_class_expression(ce.clone());
+                        let ce_display = self.unpack_class_expression(ce.clone(),Some(b));
                         context.insert("op_range", &ce_display);
                     }
                 }
@@ -338,7 +342,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
                     ce,
                 }) => {
                     if ii == iri {
-                        let ce_display = self.unpack_class_expression(ce.clone());
+                        let ce_display = self.unpack_class_expression(ce.clone(), Some(b));
                         context.insert("op_domain", &ce_display);
                     }
                 }
@@ -352,7 +356,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
                     i: Individual::Named(ind),
                 }) => {
                     if &ind.0 == iri {
-                        let cexp = self.unpack_class_expression(ce.clone());
+                        let cexp = self.unpack_class_expression(ce.clone(), Some(b));
                         class_assertions.push(cexp);
                     }
                 }
@@ -394,10 +398,14 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
         }
     }
 
-    fn render_all_declarations_html(&mut self) -> Result<HashMap<IRI<A>, String>> {
+    fn render_all_declarations_html(&mut self, base: Option<&str>) -> Result<HashMap<IRI<A>, String>> {
+        let b = match base {
+            Some(s) => s,
+            None => &self.settings.ontology.iri.clone()
+        };
         let mut declaration_hm: HashMap<IRI<A>, String> = HashMap::new();
         for cl in self.get_iris_for_declaration(ComponentKind::DeclareClass) {
-            let rendered_page = self.render_declaration_iri_html(&cl)?;
+            let rendered_page = self.render_declaration_iri_html(&cl, Some(b))?;
             match declaration_hm.entry(cl) {
                 Entry::Occupied(o) => println!("{:?}", o),
                 Entry::Vacant(v) => {
@@ -406,7 +414,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
             }
         }
         for ni in self.get_iris_for_declaration(ComponentKind::DeclareNamedIndividual) {
-            let rendered_page = self.render_declaration_iri_html(&ni)?;
+            let rendered_page = self.render_declaration_iri_html(&ni, Some(b))?;
             match declaration_hm.entry(ni) {
                 Entry::Occupied(o) => println!("{:?}", o),
                 Entry::Vacant(v) => {
@@ -415,7 +423,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
             }
         }
         for dp in self.get_iris_for_declaration(ComponentKind::DeclareDataProperty) {
-            let rendered_page = self.render_declaration_iri_html(&dp)?;
+            let rendered_page = self.render_declaration_iri_html(&dp, Some(b))?;
             match declaration_hm.entry(dp) {
                 Entry::Occupied(o) => println!("{:?}", o),
                 Entry::Vacant(v) => {
@@ -424,7 +432,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
             }
         }
         for op in self.get_iris_for_declaration(ComponentKind::DeclareObjectProperty) {
-            let rendered_page = self.render_declaration_iri_html(&op)?;
+            let rendered_page = self.render_declaration_iri_html(&op, Some(b))?;
             match declaration_hm.entry(op) {
                 Entry::Occupied(o) => println!("{:?}", o),
                 Entry::Vacant(v) => {
@@ -433,7 +441,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
             }
         }
         for ap in self.get_iris_for_declaration(ComponentKind::DeclareAnnotationProperty) {
-            let rendered_page = self.render_declaration_iri_html(&ap)?;
+            let rendered_page = self.render_declaration_iri_html(&ap, Some(b))?;
             match declaration_hm.entry(ap) {
                 Entry::Occupied(o) => println!("{:?}", o),
                 Entry::Vacant(v) => {
@@ -463,7 +471,11 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
             .collect()
     }
 
-    fn render_metadata_html(&mut self) -> Result<String> {
+    fn render_metadata_html(&mut self, base: Option<&str>) -> Result<String> {
+        let b = match base {
+            Some(s) => s,
+            None => &self.settings.ontology.iri.clone()
+        };
         let mut context = TeraContext::default();
         let mut contributors: Vec<OntologyAnnotation> = vec![];
         let mut annotations: Vec<OntologyAnnotation> = vec![];
@@ -517,7 +529,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
             } else {
             }
         }
-        let entity_tree = match self.collect_entity_tree() {
+        let entity_tree = match self.collect_entity_tree(Some(b)) {
             Ok(sb) => sb,
             Err(e) => {
                 return Err(eyre::Report::msg(format!(
@@ -532,7 +544,11 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
         Ok(TEMPLATES.render("ontology.html", &context)?)
     }
 
-    fn collect_entity_tree(&mut self) -> Result<SideBar> {
+    fn collect_entity_tree(&mut self, base: Option<&str>) -> Result<SideBar> {
+        let b = match base {
+            Some(s) => s,
+            None => &self.settings.ontology.iri
+        };
         let mut side_bar = SideBar::default();
         let scos: Vec<AnnotatedComponent<A>> = self
             .ontology
@@ -543,7 +559,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
             match &sco.component {
                 Component::DeclareClass(DeclareClass(Class(ii))) => {
                     if ii.contains(&self.settings.ontology.iri) {
-                        let class_display = self.build_entity_display(ii.clone());
+                        let class_display = self.build_entity_display(ii.clone(), b);
                         side_bar.classes.push(class_display)
                     }
                 }
@@ -559,7 +575,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
             match &nis.component {
                 Component::DeclareNamedIndividual(DeclareNamedIndividual(NamedIndividual(ii))) => {
                     if ii.contains(&self.settings.ontology.iri) {
-                        let i_display = self.build_entity_display(ii.clone());
+                        let i_display = self.build_entity_display(ii.clone(), b);
                         side_bar.named_individuals.push(i_display)
                     }
                 }
@@ -575,7 +591,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
             match &dop.component {
                 Component::DeclareObjectProperty(DeclareObjectProperty(ObjectProperty(ii))) => {
                     if ii.contains(&self.settings.ontology.iri) {
-                        let op_display = self.build_entity_display(ii.clone());
+                        let op_display = self.build_entity_display(ii.clone(), b);
                         side_bar.object_props.push(op_display)
                     }
                 }
@@ -593,7 +609,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
                     AnnotationProperty(ii),
                 )) => {
                     if ii.contains(&self.settings.ontology.iri) {
-                        let ap_display = self.build_entity_display(ii.clone());
+                        let ap_display = self.build_entity_display(ii.clone(), b);
                         side_bar.annotation_props.push(ap_display)
                     }
                 }
@@ -630,47 +646,51 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
         Ok(side_bar)
     }
 
-    fn unpack_class_expression(&self, ce: ClassExpression<A>) -> DisplayComp {
+    fn unpack_class_expression(&self, ce: ClassExpression<A>, base: Option<&str>) -> DisplayComp {
+        let b = match base {
+            Some(s) => s,
+            None => &self.settings.ontology.iri
+        };
         match ce {
             ClassExpression::Class(class) => {
-                let disp = self.build_entity_display(class.0.clone());
+                let disp = self.build_entity_display(class.0.clone(), b);
                 DisplayComp::Simple(disp)
             }
             ClassExpression::ObjectIntersectionOf(class_expressions) => {
                 let v: Vec<DisplayComp> = class_expressions
                     .iter()
-                    .map(|ce| self.unpack_class_expression(ce.clone()))
+                    .map(|ce| self.unpack_class_expression(ce.clone(), Some(b)))
                     .collect();
                 DisplayComp::And(GroupDisplay(v))
             }
             ClassExpression::ObjectUnionOf(class_expressions) => {
                 let v: Vec<DisplayComp> = class_expressions
                     .iter()
-                    .map(|ce| self.unpack_class_expression(ce.clone()))
+                    .map(|ce| self.unpack_class_expression(ce.clone(), Some(b)))
                     .collect();
                 DisplayComp::Or(GroupDisplay(v))
             }
             ClassExpression::ObjectComplementOf(class_expression) => {
-                let ce = self.unpack_class_expression(*class_expression);
+                let ce = self.unpack_class_expression(*class_expression, Some(b));
                 DisplayComp::Not(Box::new(ce))
             }
             ClassExpression::ObjectOneOf(_) => todo!("Not implemented: ObjectOneOf"),
             ClassExpression::ObjectSomeValuesFrom { ope, bce } => {
-                let ope = Box::new(self.unpack_object_property_expression(ope));
-                let ce = Box::new(self.unpack_class_expression(*bce));
+                let ope = Box::new(self.unpack_object_property_expression(ope, Some(b)));
+                let ce = Box::new(self.unpack_class_expression(*bce, Some(b)));
                 DisplayComp::Some(RelDisplay { rel: ope, ce })
             }
             ClassExpression::ObjectAllValuesFrom { ope, bce } => {
-                let ope = Box::new(self.unpack_object_property_expression(ope));
-                let ce = Box::new(self.unpack_class_expression(*bce));
+                let ope = Box::new(self.unpack_object_property_expression(ope, Some(b)));
+                let ce = Box::new(self.unpack_class_expression(*bce, Some(b)));
                 DisplayComp::All(RelDisplay { rel: ope, ce })
             }
             ClassExpression::ObjectHasValue {
                 ope,
                 i: Individual::Named(ind),
             } => {
-                let op = self.unpack_object_property_expression(ope);
-                let ce = self.build_entity_display(ind.0);
+                let op = self.unpack_object_property_expression(ope, Some(b));
+                let ce = self.build_entity_display(ind.0, b);
                 DisplayComp::Value(RelDisplay {
                     rel: Box::new(op),
                     ce: Box::new(DisplayComp::Simple(ce)),
@@ -711,7 +731,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
                 todo!("Not implemented: DataAllValuesFrom")
             }
             ClassExpression::DataHasValue { dp, l } => {
-                let dpd = self.build_entity_display(dp.0);
+                let dpd = self.build_entity_display(dp.0, b);
                 let value = unpack_literal(l);
                 DisplayComp::Data(DPDisplay {
                     dp: Box::new(DisplayComp::Simple(dpd)),
@@ -730,9 +750,9 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
         }
     }
 
-    fn build_entity_display(&self, iri: IRI<A>) -> EntityDisplay {
-        let entity_id = if iri.contains(&self.settings.ontology.iri) {
-            iri.replace(&self.settings.ontology.iri, "")
+    fn build_entity_display(&self, iri: IRI<A>, base: &str) -> EntityDisplay {
+        let entity_id = if iri.contains(base) {
+            iri.replace(base, "")
         } else {
             iri.to_string()
         };
@@ -746,14 +766,18 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
         EntityDisplay::new(iri.to_string(), entity_id, entity_label)
     }
 
-    fn unpack_object_property_expression(&self, ope: ObjectPropertyExpression<A>) -> DisplayComp {
+    fn unpack_object_property_expression(&self, ope: ObjectPropertyExpression<A>, base: Option<&str>) -> DisplayComp {
+        let b = match base {
+            Some(s) => s,
+            None => &self.settings.ontology.iri
+        };
         match ope {
             ObjectPropertyExpression::ObjectProperty(object_property) => {
-                let op_display = self.build_entity_display(object_property.0.clone());
+                let op_display = self.build_entity_display(object_property.0.clone(), b);
                 DisplayComp::Simple(op_display)
             }
             ObjectPropertyExpression::InverseObjectProperty(object_property) => {
-                let op_display = self.build_entity_display(object_property.0.clone());
+                let op_display = self.build_entity_display(object_property.0.clone(), b);
                 DisplayComp::Simple(op_display)
             }
         }
