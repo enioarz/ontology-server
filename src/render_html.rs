@@ -2,7 +2,12 @@ use curie::PrefixMapping;
 use eyre::{Context, Result};
 use horned_owl::io::owx::reader::read_with_build;
 use horned_owl::model::{
-    AnnotatedComponent, AnnotationProperty, AnnotationSubject, AnnotationValue, ArcStr, Build, Class, ClassAssertion, ClassExpression, DeclareAnnotationProperty, DeclareClass, DeclareNamedIndividual, DeclareObjectProperty, EquivalentClasses, Individual, InverseObjectProperties, Literal, NamedIndividual, ObjectProperty, ObjectPropertyDomain, ObjectPropertyExpression, ObjectPropertyRange, RcStr, SubClassOf, SubObjectPropertyExpression, SubObjectPropertyOf
+    AnnotatedComponent, AnnotationProperty, AnnotationSubject, AnnotationValue, ArcStr, Build,
+    Class, ClassAssertion, ClassExpression, DeclareAnnotationProperty, DeclareClass,
+    DeclareNamedIndividual, DeclareObjectProperty, EquivalentClasses, Individual,
+    InverseObjectProperties, Literal, NamedIndividual, ObjectProperty, ObjectPropertyDomain,
+    ObjectPropertyExpression, ObjectPropertyRange, RcStr, SubClassOf, SubObjectPropertyExpression,
+    SubObjectPropertyOf,
 };
 use horned_owl::model::{Component, ComponentKind, ForIRI, IRI};
 use horned_owl::ontology::indexed::ForIndex;
@@ -162,9 +167,7 @@ pub trait IRIMappedRenderHTML<A: ForIRI> {
     }
 
     fn unpack_class_expression(&self, _: ClassExpression<A>) -> DisplayComp {
-        todo!(
-            "unpack_class_expression is not implemented",
-        )
+        todo!("unpack_class_expression is not implemented",)
     }
 
     fn unpack_object_property_expression(&self, _: ObjectPropertyExpression<A>) -> DisplayComp {
@@ -552,8 +555,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
             .component_for_kind(ComponentKind::DeclareNamedIndividual)
             .map(|x| x.clone())
             .collect();
-        for nis in niss
-        {
+        for nis in niss {
             match &nis.component {
                 Component::DeclareNamedIndividual(DeclareNamedIndividual(NamedIndividual(ii))) => {
                     if ii.contains(&self.settings.ontology.iri) {
@@ -569,8 +571,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
             .component_for_kind(ComponentKind::DeclareObjectProperty)
             .map(|x| x.clone())
             .collect();
-        for dop in dops
-        {
+        for dop in dops {
             match &dop.component {
                 Component::DeclareObjectProperty(DeclareObjectProperty(ObjectProperty(ii))) => {
                     if ii.contains(&self.settings.ontology.iri) {
@@ -586,8 +587,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
             .component_for_kind(ComponentKind::DeclareAnnotationProperty)
             .map(|x| x.clone())
             .collect();
-        for dap in daps
-        {
+        for dap in daps {
             match &dap.component {
                 Component::DeclareAnnotationProperty(DeclareAnnotationProperty(
                     AnnotationProperty(ii),
@@ -605,8 +605,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
             .component_for_kind(ComponentKind::DeclareDataProperty)
             .map(|x| x.clone())
             .collect();
-        for ddp in ddps
-        {
+        for ddp in ddps {
             match &ddp.component {
                 Component::DeclareDataProperty(dp) => {
                     let class_iri = &dp.0.0;
@@ -766,7 +765,7 @@ impl<A: ForIRI, AA: ForIndex<A>> OntologyRender<A, AA> {
         let dir = if let Some(d) = &settings.ontology.source {
             d
         } else {
-            return Err(eyre::eyre!("Expected source file"))
+            return Err(eyre::eyre!("Expected source file"));
         };
         let build: Build<A> = Build::new();
         let f = File::open(dir)?;
@@ -774,7 +773,7 @@ impl<A: ForIRI, AA: ForIndex<A>> OntologyRender<A, AA> {
         let r = read_with_build(reader, &build);
         assert!(r.is_ok(), "Expected ontology, got failure:{:?}", r.err());
         let (o, mut prefix_mapping) = r.ok().unwrap();
-        let mut ontology: IRIMappedOntology<A,AA> = IRIMappedOntology::from(o);
+        let mut ontology: IRIMappedOntology<A, AA> = IRIMappedOntology::from(o);
         let label_map = get_label_hashmap(&mut ontology);
         prefix_mapping.set_default(&settings.ontology.iri);
         if let Some(imports) = &settings.import {
@@ -791,7 +790,7 @@ impl<A: ForIRI, AA: ForIndex<A>> OntologyRender<A, AA> {
             ontology,
             prefix_mapping,
             label_map,
-            settings
+            settings,
         })
     }
 }
@@ -822,12 +821,14 @@ fn unpack_annotation_value<A: ForIRI>(av: &AnnotationValue<A>) -> Option<String>
     }
 }
 
-fn get_label_hashmap<A, AA>(ontology: &mut IRIMappedOntology<A, AA>) -> HashMap<IRI<A>, String>  where A: ForIRI, AA: ForIndex<A>{
+fn get_label_hashmap<A, AA>(ontology: &mut IRIMappedOntology<A, AA>) -> HashMap<IRI<A>, String>
+where
+    A: ForIRI,
+    AA: ForIndex<A>,
+{
     let mut label_map: HashMap<IRI<A>, String> = HashMap::new();
 
-    for aa in ontology
-        .component_for_kind(ComponentKind::AnnotationAssertion)
-    {
+    for aa in ontology.component_for_kind(ComponentKind::AnnotationAssertion) {
         match &aa.component {
             Component::AnnotationAssertion(aas) => match &aas.subject {
                 AnnotationSubject::IRI(iri) => match aas.ann.ap.0.as_ref() {

@@ -1,10 +1,7 @@
-use std::io;
-use std::fs;
-use std::io::Write;
-use std::path::Path;
 use clap::Arg;
 use clap::ArgGroup;
 use clap::ArgMatches;
+use clap::builder::styling::AnsiColor;
 use clap::{ArgAction, Command};
 use dotenvy::dotenv;
 use eyre::Result;
@@ -15,12 +12,14 @@ use figment::{
 use hyper_ontology::config::{OntologyConfig, Settings};
 use hyper_ontology::render_html::ArcOntologyRender;
 use hyper_ontology::render_html::IRIMappedRenderHTML;
+use std::fs;
+use std::path::Path;
 
 fn main() -> Result<()> {
     let cl = cli();
     let matches = cl.get_matches();
     match matches.subcommand() {
-        Some(("build",  _)) => {
+        Some(("build", _)) => {
             let settings = parser_app(Some(&matches))?;
             let mut or = ArcOntologyRender::new_with_settings(settings)?;
 
@@ -42,17 +41,13 @@ fn main() -> Result<()> {
                     Err(_) => (),
                 }
             }
-            fs::write(
-                "public/index.html",
-                or.render_metadata_html().unwrap(),
-            )
-            .unwrap();
+            fs::write("public/index.html", or.render_metadata_html().unwrap()).unwrap();
             copy_dir_all("static", "public/static")?;
-
-        },
+        }
         _ => {
             let mut help = cli();
-            help.print_help()?;}
+            help.print_help()?;
+        }
     };
 
     Ok(())
@@ -84,11 +79,23 @@ pub fn parser_app(m: Option<&ArgMatches>) -> Result<Settings> {
             true => k.to_string().replace("_", ".").into(),
             false => k.into(),
         });
+    let pre = Figment::new().merge(env);
 
-    let settings: Settings = Figment::new()
-        .merge(env)
-        .merge(Toml::file("configs/example.toml"))
-        .extract()?;
+    let pre = if let Some(c) = m {
+        if let Some(a) = c.get_one("Config").map(|m: &String| String::from(m)) {
+            if Path::new(&a).exists() {
+                pre.merge(Toml::file(&a))
+            } else {
+                pre
+            }
+        } else {
+            pre
+        }
+    } else {
+        pre
+    };
+
+    let settings: Settings = pre.extract()?;
     let fig: Figment = if let Some(matches) = m {
         let imports: Option<Vec<OntologyConfig>> = matches.get_many("Imported").map(|m| {
             m.map(|i: &String| {
@@ -104,19 +111,17 @@ pub fn parser_app(m: Option<&ArgMatches>) -> Result<Settings> {
             .collect()
         });
         let new_imports = match settings.import {
-            Some(mut i) => {
-                match imports {
-                    Some(mut j) => {
-                        i.append(&mut j);
-                        Some(i)},
-                    None  => Some(i)
+            Some(mut i) => match imports {
+                Some(mut j) => {
+                    i.append(&mut j);
+                    Some(i)
                 }
-
+                None => Some(i),
             },
-            None => imports
+            None => imports,
         };
         let cli_settings = Settings {
-            baseurl:if let Some(u) = matches.get_one("URL").map(|m: &String| String::from(m)) {
+            baseurl: if let Some(u) = matches.get_one("URL").map(|m: &String| String::from(m)) {
                 Some(u)
             } else {
                 settings.baseurl.clone()
@@ -127,12 +132,14 @@ pub fn parser_app(m: Option<&ArgMatches>) -> Result<Settings> {
                 } else {
                     settings.ontology.iri.clone()
                 },
-                source: if let Some(s) = matches.get_one("Source").map(|m: &String| String::from(m)) {
+                source: if let Some(s) = matches.get_one("Source").map(|m: &String| String::from(m))
+                {
                     Some(s)
                 } else {
                     settings.ontology.source.clone()
                 },
-                suffix: if let Some(s) =  matches.get_one("Suffix").map(|m: &String| String::from(m))  {
+                suffix: if let Some(s) = matches.get_one("Suffix").map(|m: &String| String::from(m))
+                {
                     Some(s)
                 } else {
                     settings.ontology.suffix.clone()
@@ -141,18 +148,16 @@ pub fn parser_app(m: Option<&ArgMatches>) -> Result<Settings> {
             import: new_imports,
             templates: if let Some(t) = matches
                 .get_one("Templates")
-                .map(|m: &String| String::from(m)) {
-                    Some(t)
-                } else {
-                    settings.templates.clone()
-                },
+                .map(|m: &String| String::from(m))
+            {
+                Some(t)
+            } else {
+                settings.templates.clone()
+            },
         };
-        Figment::new()
-            .merge(Serialized::defaults(cli_settings))
-
+        Figment::new().merge(Serialized::defaults(cli_settings))
     } else {
-        Figment::new()
-            .merge(Serialized::defaults(settings))
+        Figment::new().merge(Serialized::defaults(settings))
     };
 
     Ok(fig.extract()?)
@@ -161,6 +166,7 @@ pub fn parser_app(m: Option<&ArgMatches>) -> Result<Settings> {
 fn cli() -> Command {
     clap::command!()
         .name("hyppo")
+        .styles(CLAP_STYLING)
         .bin_name("hyppo")
         .group(ArgGroup::new("general"))
         .next_help_heading("GENERAL")
@@ -192,6 +198,12 @@ fn cli() -> Command {
                 .help("Tera templates directory.")
                 .default_value("templates")
                 .group("general"),
+            Arg::new("Config")
+                .long("config")
+                .short('c')
+                .action(ArgAction::Set)
+                .help("Configuration directory.")
+                .group("general"),
             Arg::new("Imported")
                 .short('p')
                 .long("import")
@@ -201,6 +213,7 @@ fn cli() -> Command {
         ])
         .subcommand(
             clap::command!("build")
+                .about("Build ontology static files.")
                 .args([
                     Arg::new("empty")
                         .long("empty")
@@ -214,4 +227,11 @@ fn cli() -> Command {
                         .group("build")
                 ])
         )
+        .subcommand_help_heading("Commands")
 }
+
+pub const CLAP_STYLING: clap::builder::styling::Styles = clap::builder::styling::Styles::styled()
+    .header(AnsiColor::Yellow.on_default())
+    .usage(AnsiColor::Yellow.on_default())
+    .literal(AnsiColor::Green.on_default())
+    .placeholder(AnsiColor::Green.on_default());
