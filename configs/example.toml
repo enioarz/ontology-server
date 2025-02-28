@@ -1,0 +1,10 @@
+baseurl="http://127.0.0.1:57391/"
+
+[ontology]
+iri="http://openenergy-platform.org/ontology/chio/"
+suffix="CHIO"
+source="ontology/chio-full.owx"
+
+[[import]]
+iri="http://purl.obolibrary.org/obo/"
+suffix="BFO"
