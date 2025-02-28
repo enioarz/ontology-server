@@ -63,7 +63,7 @@ fn main() -> Result<()> {
                             }
                             fs::write(
                                 format!("public/{p}/index.html"),
-                                or.render_metadata_html(Some(&n.iri)).unwrap(),
+                                or.render_metadata_html(Some(&n)).unwrap(),
                             )
                             .unwrap();
                         }

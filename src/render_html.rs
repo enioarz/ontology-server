@@ -23,7 +23,7 @@ use std::sync::Arc;
 use tera::Context as TeraContext;
 use tera::Tera;
 
-use crate::config::Settings;
+use crate::config::{OntologyConfig, Settings};
 
 #[derive(Debug, Clone)]
 pub struct RenderError(String);
@@ -123,14 +123,14 @@ pub trait IRIMappedRenderHTML<A: ForIRI> {
     fn render_all_declarations_html(&mut self) -> Result<HashMap<IRI<A>, String>> {
         Err(eyre::Report::msg("Not implemented"))
     }
-    fn render_metadata_html(&mut self, _: Option<&str>) -> Result<String> {
+    fn render_metadata_html(&mut self, _: Option<&OntologyConfig>) -> Result<String> {
         Err(eyre::Report::msg("Not implemented"))
     }
 
     fn get_iris_for_declaration(&mut self, _: ComponentKind) -> Vec<IRI<A>> {
         vec![]
     }
-    fn collect_entity_tree(&mut self, _: Option<&str>) -> Result<SideBar> {
+    fn collect_entity_tree(&mut self, _: &OntologyConfig) -> Result<SideBar> {
         Err(eyre::Report::msg("Error when rendering tree"))
     }
 
@@ -440,10 +440,10 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
             .collect()
     }
 
-    fn render_metadata_html(&mut self, base: Option<&str>) -> Result<String> {
+    fn render_metadata_html(&mut self, base: Option<&OntologyConfig>) -> Result<String> {
         let b = match base {
             Some(s) => s,
-            None => &self.settings.ontology.iri.clone(),
+            None => &self.settings.ontology.clone(),
         };
         let mut context = TeraContext::default();
         let mut contributors: Vec<OntologyAnnotation> = vec![];
@@ -498,7 +498,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
             } else {
             }
         }
-        let entity_tree = match self.collect_entity_tree(Some(b)) {
+        let entity_tree = match self.collect_entity_tree(b) {
             Ok(sb) => sb,
             Err(e) => {
                 return Err(eyre::Report::msg(format!(
@@ -513,11 +513,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
         Ok(self.templates.render("ontology.html", &context)?)
     }
 
-    fn collect_entity_tree(&mut self, base: Option<&str>) -> Result<SideBar> {
-        let b = match base {
-            Some(s) => s,
-            None => &self.settings.ontology.iri,
-        };
+    fn collect_entity_tree(&mut self, base: &OntologyConfig) -> Result<SideBar> {
         let mut side_bar = SideBar::default();
         let scos: Vec<AnnotatedComponent<A>> = self
             .ontology
@@ -527,7 +523,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
         for sco in scos {
             match &sco.component {
                 Component::DeclareClass(DeclareClass(Class(ii))) => {
-                    if ii.contains(b) {
+                    if ii.contains(&base.iri) {
                         let class_display = self.build_entity_display(ii.clone());
                         side_bar.classes.push(class_display)
                     }
@@ -543,7 +539,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
         for nis in niss {
             match &nis.component {
                 Component::DeclareNamedIndividual(DeclareNamedIndividual(NamedIndividual(ii))) => {
-                    if ii.contains(b) {
+                    if ii.contains(&base.iri) {
                         let i_display = self.build_entity_display(ii.clone());
                         side_bar.named_individuals.push(i_display)
                     }
@@ -559,7 +555,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
         for dop in dops {
             match &dop.component {
                 Component::DeclareObjectProperty(DeclareObjectProperty(ObjectProperty(ii))) => {
-                    if ii.contains(b) {
+                    if ii.contains(&base.iri) {
                         let op_display = self.build_entity_display(ii.clone());
                         side_bar.object_props.push(op_display)
                     }
@@ -577,7 +573,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
                 Component::DeclareAnnotationProperty(DeclareAnnotationProperty(
                     AnnotationProperty(ii),
                 )) => {
-                    if ii.contains(b) {
+                    if ii.contains(&base.iri) {
                         let ap_display = self.build_entity_display(ii.clone());
                         side_bar.annotation_props.push(ap_display)
                     }
@@ -594,7 +590,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
             match &ddp.component {
                 Component::DeclareDataProperty(dp) => {
                     let class_iri = &dp.0.0;
-                    if class_iri.contains(b) {
+                    if class_iri.contains(&base.iri) {
                         let iri_string = class_iri.to_string();
                         let class_label =
                             self.label_map.get(class_iri).unwrap_or(&iri_string).clone();
