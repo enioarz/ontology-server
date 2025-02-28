@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-clap = { version = "4.5.31", features = ["cargo", "derive"] }
+clap = { version = "4.5.31", features = ["cargo", "derive", "help"] }
 curie = "0.1.3"
 dotenvy = "0.15.7"
 eyre = "0.6.12"

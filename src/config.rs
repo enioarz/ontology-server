@@ -1,5 +1,4 @@
 use clap::ArgMatches;
-use clap::{ArgAction, Command, arg, command, value_parser};
 
 use horned_owl::io::ParserConfiguration;
 use horned_owl::io::RDFParserConfiguration;
