@@ -2,13 +2,19 @@
 name = "hyper-ontology"
 version = "0.1.0"
 edition = "2024"
+default-run = "hyppo"
 
 [dependencies]
 clap = { version = "4.5.31", features = ["cargo", "derive", "help"] }
 curie = "0.1.3"
 dotenvy = "0.15.7"
 eyre = "0.6.12"
-figment = { version = "0.10.19", features = ["env", "serde_yaml", "toml", "yaml"] }
+figment = { version = "0.10.19", features = [
+    "env",
+    "serde_yaml",
+    "toml",
+    "yaml",
+] }
 horned-owl = "1.0.0"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_derive = "1.0.218"
