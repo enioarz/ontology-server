@@ -10,7 +10,6 @@ dotenvy = "0.15.7"
 eyre = "0.6.12"
 figment = { version = "0.10.19", features = ["env", "serde_yaml", "toml", "yaml"] }
 horned-owl = "1.0.0"
-lazy_static = "1.5.0"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_derive = "1.0.218"
 tera = "1.20.0"

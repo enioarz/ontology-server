@@ -170,10 +170,12 @@ fn cli() -> Command {
         .bin_name("hyppo")
         .group(ArgGroup::new("general"))
         .next_help_heading("GENERAL")
-        .arg(Arg::new("IRI")
-            .action(ArgAction::Set)
-            .help("IRI of the main ontology.")
-            .group("general"))
+        .arg(
+            Arg::new("IRI")
+                .action(ArgAction::Set)
+                .help("IRI of the main ontology.")
+                .group("general"),
+        )
         .args([
             Arg::new("Source")
                 .long("source")
@@ -214,15 +216,12 @@ fn cli() -> Command {
         .subcommand(
             clap::command!("build")
                 .about("Build ontology static files.")
-                .args([
-                    Arg::new("Render")
-                        .long("render_imports")
-                        .short('r')
-                        .action(ArgAction::SetTrue)
-                        .help("Render Imports.")
-                        .group("general"),
-
-                ])
+                .args([Arg::new("Render")
+                    .long("render_imports")
+                    .short('r')
+                    .action(ArgAction::SetTrue)
+                    .help("Render Imports.")
+                    .group("general")]),
         )
         .subcommand_help_heading("Commands")
 }

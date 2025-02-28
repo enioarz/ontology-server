@@ -116,7 +116,7 @@ impl Default for SideBar {
 }
 
 pub trait IRIMappedRenderHTML<A: ForIRI> {
-    fn render_declaration_iri_html(&mut self, _: &IRI<A>, _ : Option<&str>) -> Result<String> {
+    fn render_declaration_iri_html(&mut self, _: &IRI<A>, _: Option<&str>) -> Result<String> {
         Err(eyre::Report::msg("Not implemented"))
     }
 
@@ -142,7 +142,11 @@ pub trait IRIMappedRenderHTML<A: ForIRI> {
         todo!("unpack_class_expression is not implemented",)
     }
 
-    fn unpack_object_property_expression(&self, _: ObjectPropertyExpression<A>, _: Option<&str>) -> DisplayComp {
+    fn unpack_object_property_expression(
+        &self,
+        _: ObjectPropertyExpression<A>,
+        _: Option<&str>,
+    ) -> DisplayComp {
         todo!()
     }
 }
@@ -152,7 +156,7 @@ pub struct OntologyRender<A: ForIRI, AA: ForIndex<A>> {
     pub prefix_mapping: PrefixMapping,
     pub label_map: HashMap<IRI<A>, String>,
     pub settings: Settings,
-    pub templates: Tera
+    pub templates: Tera,
 }
 
 pub type RcOntologyRender = OntologyRender<RcStr, Rc<AnnotatedComponent<RcStr>>>;
@@ -162,7 +166,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
     fn render_declaration_iri_html(&mut self, iri: &IRI<A>, base: Option<&str>) -> Result<String> {
         let b = match base {
             Some(s) => s,
-            None => &self.settings.ontology.iri
+            None => &self.settings.ontology.iri,
         };
         let mut context = TeraContext::new();
         let mut annotations: Vec<OntologyAnnotation> = vec![];
@@ -235,7 +239,8 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
                     sub: ClassExpression::Class(subc),
                 }) => {
                     if &spc.0 == iri {
-                        let child_display = self.build_entity_display(subc.0.clone(), &self.settings.ontology.iri);
+                        let child_display =
+                            self.build_entity_display(subc.0.clone(), &self.settings.ontology.iri);
                         sub_entities.push(DisplayComp::Simple(child_display))
                     } else if &subc.0 == iri {
                         let parent_display = self.build_entity_display(spc.0.clone(), b);
@@ -294,10 +299,10 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
                 Component::EquivalentDataProperties(_) => (),
                 Component::InverseObjectProperties(InverseObjectProperties(iop, iiop)) => {
                     if &iop.0 == iri {
-                        let op_display = self.build_entity_display(iiop.0.clone(),b);
+                        let op_display = self.build_entity_display(iiop.0.clone(), b);
                         inverse_ops.push(DisplayComp::Simple(op_display));
                     } else if &iiop.0 == iri {
-                        let op_display = self.build_entity_display(iop.0.clone(),b);
+                        let op_display = self.build_entity_display(iop.0.clone(), b);
                         inverse_ops.push(DisplayComp::Simple(op_display));
                     }
                 }
@@ -306,7 +311,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
                     ce,
                 }) => {
                     if ii == iri {
-                        let ce_display = self.unpack_class_expression(ce.clone(),Some(b));
+                        let ce_display = self.unpack_class_expression(ce.clone(), Some(b));
                         context.insert("op_range", &ce_display);
                     }
                 }
@@ -353,16 +358,20 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
         }
         context.insert("annotations", &annotations);
         match this_kind {
-            Kind::Class => self.templates
+            Kind::Class => self
+                .templates
                 .render("entity.html", &context)
                 .wrap_err("Could not render class page"),
-            Kind::ObjectProperty => self.templates
+            Kind::ObjectProperty => self
+                .templates
                 .render("entity.html", &context)
                 .wrap_err("Could not render object property page"),
-            Kind::AnnotationProperty => self.templates
+            Kind::AnnotationProperty => self
+                .templates
                 .render("entity.html", &context)
                 .wrap_err("Could not render ann prop page"),
-            Kind::NamedIndividual => self.templates
+            Kind::NamedIndividual => self
+                .templates
                 .render("entity.html", &context)
                 .wrap_err("Could not render ann prop page"),
             Kind::Undefined => {
@@ -371,10 +380,13 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
         }
     }
 
-    fn render_all_declarations_html(&mut self, base: Option<&str>) -> Result<HashMap<IRI<A>, String>> {
+    fn render_all_declarations_html(
+        &mut self,
+        base: Option<&str>,
+    ) -> Result<HashMap<IRI<A>, String>> {
         let b = match base {
             Some(s) => s,
-            None => &self.settings.ontology.iri.clone()
+            None => &self.settings.ontology.iri.clone(),
         };
         let mut declaration_hm: HashMap<IRI<A>, String> = HashMap::new();
         for cl in self.get_iris_for_declaration(ComponentKind::DeclareClass) {
@@ -447,7 +459,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
     fn render_metadata_html(&mut self, base: Option<&str>) -> Result<String> {
         let b = match base {
             Some(s) => s,
-            None => &self.settings.ontology.iri.clone()
+            None => &self.settings.ontology.iri.clone(),
         };
         let mut context = TeraContext::default();
         let mut contributors: Vec<OntologyAnnotation> = vec![];
@@ -520,7 +532,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
     fn collect_entity_tree(&mut self, base: Option<&str>) -> Result<SideBar> {
         let b = match base {
             Some(s) => s,
-            None => &self.settings.ontology.iri
+            None => &self.settings.ontology.iri,
         };
         let mut side_bar = SideBar::default();
         let scos: Vec<AnnotatedComponent<A>> = self
@@ -622,7 +634,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
     fn unpack_class_expression(&self, ce: ClassExpression<A>, base: Option<&str>) -> DisplayComp {
         let b = match base {
             Some(s) => s,
-            None => &self.settings.ontology.iri
+            None => &self.settings.ontology.iri,
         };
         match ce {
             ClassExpression::Class(class) => {
@@ -739,10 +751,14 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
         EntityDisplay::new(iri.to_string(), entity_id, entity_label)
     }
 
-    fn unpack_object_property_expression(&self, ope: ObjectPropertyExpression<A>, base: Option<&str>) -> DisplayComp {
+    fn unpack_object_property_expression(
+        &self,
+        ope: ObjectPropertyExpression<A>,
+        base: Option<&str>,
+    ) -> DisplayComp {
         let b = match base {
             Some(s) => s,
-            None => &self.settings.ontology.iri
+            None => &self.settings.ontology.iri,
         };
         match ope {
             ObjectPropertyExpression::ObjectProperty(object_property) => {
@@ -791,14 +807,14 @@ impl<A: ForIRI, AA: ForIndex<A>> OntologyRender<A, AA> {
                     out
                 }
                 None => {
-                    return Err(eyre::eyre!("Templates not defined, set templates directory"))
+                    return Err(eyre::eyre!(
+                        "Templates not defined, set templates directory"
+                    ));
                 }
             };
             let mut tera = match Tera::new(&templates_dir) {
                 Ok(t) => t,
-                Err(e) => {
-                    return Err(eyre::eyre!("Parsing error(s): {}", e))
-                }
+                Err(e) => return Err(eyre::eyre!("Parsing error(s): {}", e)),
             };
             tera.autoescape_on(vec![".html", ".sql"]);
             tera
@@ -808,7 +824,7 @@ impl<A: ForIRI, AA: ForIndex<A>> OntologyRender<A, AA> {
             prefix_mapping,
             label_map,
             settings,
-            templates
+            templates,
         })
     }
 }
