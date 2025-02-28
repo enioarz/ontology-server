@@ -12,11 +12,9 @@ use horned_owl::model::{
 use horned_owl::model::{Component, ComponentKind, ForIRI, IRI};
 use horned_owl::ontology::indexed::ForIndex;
 use horned_owl::ontology::iri_mapped::IRIMappedOntology;
-use lazy_static::lazy_static;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
-use std::env;
 use std::fmt;
 use std::fs::File;
 use std::io::BufReader;
@@ -26,32 +24,6 @@ use tera::Context as TeraContext;
 use tera::Tera;
 
 use crate::config::Settings;
-
-lazy_static! {
-    pub static ref TEMPLATES: Tera = {
-        let templates_dir = match env::var("TERA_TEMPLATES") {
-            Ok(dir) => {
-                let mut out = String::from(dir.trim_end_matches("/"));
-                out.push_str("/**/*.html");
-                out
-            }
-            Err(env::VarError::NotPresent) => String::from("templates/**/*.html"),
-            Err(e) => {
-                println!("Parsing error(s): {}", e);
-                ::std::process::exit(1)
-            }
-        };
-        let mut tera = match Tera::new(&templates_dir) {
-            Ok(t) => t,
-            Err(e) => {
-                println!("Parsing error(s): {}", e);
-                ::std::process::exit(1);
-            }
-        };
-        tera.autoescape_on(vec![".html", ".sql"]);
-        tera
-    };
-}
 
 #[derive(Debug, Clone)]
 pub struct RenderError(String);
@@ -180,6 +152,7 @@ pub struct OntologyRender<A: ForIRI, AA: ForIndex<A>> {
     pub prefix_mapping: PrefixMapping,
     pub label_map: HashMap<IRI<A>, String>,
     pub settings: Settings,
+    pub templates: Tera
 }
 
 pub type RcOntologyRender = OntologyRender<RcStr, Rc<AnnotatedComponent<RcStr>>>;
@@ -380,16 +353,16 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
         }
         context.insert("annotations", &annotations);
         match this_kind {
-            Kind::Class => TEMPLATES
+            Kind::Class => self.templates
                 .render("entity.html", &context)
                 .wrap_err("Could not render class page"),
-            Kind::ObjectProperty => TEMPLATES
+            Kind::ObjectProperty => self.templates
                 .render("entity.html", &context)
                 .wrap_err("Could not render object property page"),
-            Kind::AnnotationProperty => TEMPLATES
+            Kind::AnnotationProperty => self.templates
                 .render("entity.html", &context)
                 .wrap_err("Could not render ann prop page"),
-            Kind::NamedIndividual => TEMPLATES
+            Kind::NamedIndividual => self.templates
                 .render("entity.html", &context)
                 .wrap_err("Could not render ann prop page"),
             Kind::Undefined => {
@@ -541,7 +514,7 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
         context.insert("sidebar", &entity_tree);
         context.insert("annotations", &annotations);
         context.insert("contributors", &contributors);
-        Ok(TEMPLATES.render("ontology.html", &context)?)
+        Ok(self.templates.render("ontology.html", &context)?)
     }
 
     fn collect_entity_tree(&mut self, base: Option<&str>) -> Result<SideBar> {
@@ -810,11 +783,32 @@ impl<A: ForIRI, AA: ForIndex<A>> OntologyRender<A, AA> {
                 }
             }
         }
+        let templates: Tera = {
+            let templates_dir = match &settings.templates {
+                Some(dir) => {
+                    let mut out = String::from(dir.trim_end_matches("/"));
+                    out.push_str("/**/*.html");
+                    out
+                }
+                None => {
+                    return Err(eyre::eyre!("Templates not defined, set templates directory"))
+                }
+            };
+            let mut tera = match Tera::new(&templates_dir) {
+                Ok(t) => t,
+                Err(e) => {
+                    return Err(eyre::eyre!("Parsing error(s): {}", e))
+                }
+            };
+            tera.autoescape_on(vec![".html", ".sql"]);
+            tera
+        };
         Ok(OntologyRender {
             ontology,
             prefix_mapping,
             label_map,
             settings,
+            templates
         })
     }
 }
