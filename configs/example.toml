@@ -11,3 +11,7 @@ render = true
 [[import]]
 iri = "http://purl.obolibrary.org/obo/"
 suffix = "OBO"
+
+[[import]]
+iri = "https://www.commoncoreontologies.org/"
+suffix = "CCO"
