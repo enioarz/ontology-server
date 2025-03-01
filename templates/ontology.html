@@ -7,104 +7,110 @@ head %} {{ super() }}
 </style>
 <script src="/static/scripts/htmx.js"></script>
 {% endblock head %} {% block aside %} {% if sidebar %}
-<aside style="position: sticky">
-    <nav id="side-nav" class="is-sticky-above-lg">
+<aside class="sidebar-container">
+    <nav id="side-nav" class="menu">
         <ul id="entities-sidebar">
+            {% if sidebar.classes | length %}
             <li>
-                <h4 class="caret"><a href="#klsses">Classes</a></h4>
-                <ul class="nested">
+                <h4 class="sidebar-header"><a href="#classes">Classes</a></h4>
+                <ul class="sidebar-nested">
                     {% for cls in sidebar.classes %}
                     <li><a href="#{{ cls.iri }}">{{ cls.display }}</a></li>
                     {% endfor %}
                 </ul>
             </li>
+            {% endif %} {% if sidebar.named_individuals | length %}
             <li>
-                <h4 class="caret">
+                <h4 class="sidebar-header">
                     <a href="#ninds-headline">Named Individuals</a>
                 </h4>
-                <ul class="nested">
+                <ul class="sidebar-nested">
                     {% for ind in sidebar.named_individuals %}
                     <li><a href="#{{ ind.iri }}">{{ ind.display }}</a></li>
                     {% endfor %}
                 </ul>
             </li>
+            {% endif %} {% if sidebar.object_props | length %}
             <li>
-                <h4 class="caret">Object Properties</h4>
-                <ul class="nested">
+                <h4 class="sidebar-header">Object Properties</h4>
+                <ul class="sidebar-nested">
                     {% for op in sidebar.object_props %}
                     <li><a href="#{{ op.iri }}">{{ op.display }}</a></li>
                     {% endfor %}
                 </ul>
             </li>
+            {% endif %} {% if sidebar.annotation_props | length %}
             <li>
-                <h4 class="caret">Annotation Properties</h4>
-                <ul class="nested">
+                <h4 class="sidebar-header">Annotation Properties</h4>
+                <ul class="sidebar-nested">
                     {% for ap in sidebar.annotation_props %}
                     <li><a href="{{ ap.iri }}">{{ ap.display }}</a></li>
                     {% endfor %}
                 </ul>
             </li>
+            {% endif %} {% if sidebar.data_props | length %}
             <li>
-                <h4 class="caret">Data Properties</h4>
-                <ul class="nested">
+                <h4 class="sidebar-header">Data Properties</h4>
+                <ul class="sidebar-nested">
                     {% for dp in sidebar.data_props %}
                     <li><a href="{{ dp.iri }}">{{ dp.display }}</a></li>
                     {% endfor %}
                 </ul>
             </li>
+            {% endif %}
         </ul>
     </nav>
 </aside>
 {% endif %} {% endblock aside %} {% block content %} {% if iri %}
-<header class="is-fixed-above-lg">
+<div class="ontology-title">
     {% if title %}
     <h1>{{ title }}</h1>
     {% endif %}
-</header>
-<section class="ontology is-sticky-above-lg" id="{{ iri }}">
-    <p>
-        <strong>IRI:</strong>
+</div>
+<section class="ontology-content" id="{{ iri }}">
+    <div class="metadata">
+        <span class="iri-span">IRI:</span>
         <a href="{{ iri }}">{{ iri }}</a>
-    </p>
+    </div>
     {% if version %}
     <h4>Version</h4>
-    <div class="version">
+    <div class="metadata">
         <a href="{{ version }}">{{ version }}</a>
     </div>
     {% endif %} {% if description %}
     <h4>Description</h4>
-    <div class="description">
+    <div class="metadata">
         <p>{{ description }}</p>
     </div>
     {% endif %} {% if license %}
     <h4>License</h4>
-    <div class="license">
+    <div class="metadata">
         <p>{{ license }}</p>
     </div>
     {% endif %}
     <h4>Contributors</h4>
-    <dl>
+    <dl class="metadata-list">
         {% for contrib in contributors %}
-        <dd class="contributor">
+        <dd>
             <p>{{ contrib.value }}</p>
         </dd>
         {% endfor %}
     </dl>
     {% if previous %}
     <h4>Previous version</h4>
-    <div class="previous">
+    <div class="metadata">
         <p>{{ previous }}</p>
     </div>
     {% endif %}
-    <dl class="annotations">
+    <dl class="metadata">
         {% for ann in annotations %}
         <dt><a href="{{ ann.iri }}">{{ ann.display }}</a></dt>
         <dd>{{ ann.value }}</dd>
         {% endfor %}
     </dl>
-    {% endif %} {% if sidebar %}
-    <div id="klsses">
-        <h3 id="classes-headline" class="list">Classes</h3>
+    {% endif %} {% if sidebar %} {% if sidebar.classes | length %}
+    <div id="classes">
+        <h3 id="classes-headline" class="entity-list">Classes</h3>
         {% for cls in sidebar.classes %}
         <h4><a href="/{{ cls.identifier }}.html">{{ cls.display }}</a></h4>
         <div
@@ -118,8 +124,9 @@ head %} {{ super() }}
         </div>
         {% endfor %}
     </div>
+    {% endif %} {% if sidebar.named_individuals | length %}
     <div id="named-individuals">
-        <h3 id="ninds-headline" class="list">Named Individuals</h3>
+        <h3 id="ninds-headline" class="entity-list">Named Individuals</h3>
         {% for ninds in sidebar.named_individuals %}
         <h4><a href="/{{ ninds.identifier }}.html">{{ ninds.display }}</a></h4>
         <div
@@ -133,8 +140,9 @@ head %} {{ super() }}
         </div>
         {% endfor %}
     </div>
+    {% endif %} {% if sidebar.object_props | length %}
     <div id="object-properties">
-        <h3 id="classes-headline" class="list">Object Properties</h3>
+        <h3 id="classes-headline" class="entity-list">Object Properties</h3>
         {% for op in sidebar.object_props %}
         <h4><a href="/{{ op.identifier }}.html">{{ op.display }}</a></h4>
         <div
@@ -148,6 +156,6 @@ head %} {{ super() }}
         </div>
         {% endfor %}
     </div>
-    {% endif %}
+    {% endif %} {% endif %}
 </section>
 {% endblock content %}

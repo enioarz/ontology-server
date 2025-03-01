@@ -14,22 +14,22 @@ block aside %}
     </p>
     {% if definition %}
     <h5>Definition</h5>
-    <div class="definition">
+    <div class="metadata">
         <p>{{ definition }}</p>
     </div>
     {% endif %} {% if example %}
     <h5>Example</h5>
-    <div class="example">
+    <div class="metadata">
         <p>{{ example }}</p>
     </div>
     {% endif %}
-    <dl class="annotations">
+    <dl class="metadata">
         {% for ann in annotations %}
         <dt><a href="{{ ann.iri }}">{{ ann.display }}</a></dt>
         <dd>{{ ann.value }}</dd>
         {% endfor %}
     </dl>
-    <dl class="relations">
+    <dl class="metadata">
         <h5>Relations</h5>
         {% if super_classes %}
         <dt>Parent</dt>

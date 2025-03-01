@@ -5,38 +5,52 @@
     overflow-y: scroll
   } */
 
-  body > main > aside > nav.is-sticky-above-lg{
+body > main > aside > nav.is-sticky-above-lg {
     position: sticky;
-    top: calc(var(--pico-main-top-offset) + var(--pico-block-spacing-vertical)/ 2);
-    max-height:  calc(100vh - var(--pico-spacing));  /*calc(80% - var(--pico-spacing)); */
+    top: calc(
+        var(--pico-main-top-offset) + var(--pico-block-spacing-vertical) / 2
+    );
+    max-height: calc(
+        100vh - var(--pico-spacing)
+    ); /*calc(80% - var(--pico-spacing)); */
     overflow: auto;
     transition: top var(--pico-transition);
     transition-delay: 50ms;
-  }
-  .is-sticky-above-lg{
+}
+.is-sticky-above-lg {
     position: sticky;
-    top: calc(var(--pico-main-top-offset) + var(--pico-block-spacing-vertical)/ 2);
-    max-height:  calc(100vh - var(--pico-spacing));  /*calc(80% - var(--pico-spacing)); */
+    top: calc(
+        var(--pico-main-top-offset) + var(--pico-block-spacing-vertical) / 2
+    );
+    max-height: calc(
+        100vh - var(--pico-spacing)
+    ); /*calc(80% - var(--pico-spacing)); */
     overflow: auto;
     transition: top var(--pico-transition);
     transition-delay: 50ms;
-  }
+}
 
-  main {
+main {
     display: grid;
     grid-template-rows: auto 1fr;
-    grid-template-columns: 10.5rem 1fr 10.5rem;
+    grid-template-columns: 10.5rem 1fr;
     /* grid-template-areas:
-"menu header table-of-content" 
+"menu header table-of-content"
 "menu body   table-of-content"; */
-  }
+}
 
-  .is-fixed-above-lg {
+.is-fixed-above-lg {
     z-index: 2;
     position: sticky;
     top: 0;
     -webkit-backdrop-filter: blur(1rem);
     backdrop-filter: blur(1rem);
     background-color: var(--pico-header-background);
-    transition: border-top-color .4s ease-in-out,box-shadow .4s ease-in-out;
-  }
+    transition:
+        border-top-color 0.4s ease-in-out,
+        box-shadow 0.4s ease-in-out;
+}
+
+.ontology {
+    max-width: 60ch;
+}

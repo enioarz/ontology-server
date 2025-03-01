@@ -11,9 +11,12 @@
         {% endblock head %}
     </head>
     <body>
+        <header id="global-header">
+            {% block header %}My Ontology Project{% endblock header %}
+        </header>
         <main class="container page-grid">
             {% block aside %} {% endblock aside %}
-            <div id="content">{% block content %}{% endblock content %}</div>
+            <div class="content">{% block content %}{% endblock content %}</div>
         </main>
         <footer>
             {% block footer %} Built using
