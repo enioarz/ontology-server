@@ -1,11 +1,9 @@
-{% extends "base.html" %} {% block title %}Index{% endblock title %} {% block
-head %} {{ super() }}
-<style type="text/css">
-    .important {
-        color: #336699;
-    }
-</style>
+{% extends "base.html" %} {% block title %} {% if title %} {{ title }} {% endif
+%}{% endblock title %} {% block head %} {{ super() }}
 <script src="/static/scripts/htmx.js"></script>
+<script>
+    htmx.config.ignoreTitle = true;
+</script>
 {% endblock head %} {% block aside %} {% if sidebar %}
 <aside class="sidebar-container">
     <nav id="side-nav" class="menu">
@@ -109,8 +107,8 @@ head %} {{ super() }}
         {% endfor %}
     </dl>
     {% endif %} {% if sidebar %} {% if sidebar.classes | length %}
-    <div id="classes">
-        <h3 id="classes-headline" class="entity-list">Classes</h3>
+    <div id="classes" class="entity-list">
+        <h3 id="classes-headline" class="entity-header">Classes</h3>
         {% for cls in sidebar.classes %}
         <h4><a href="/{{ cls.identifier }}.html">{{ cls.display }}</a></h4>
         <div
@@ -125,8 +123,8 @@ head %} {{ super() }}
         {% endfor %}
     </div>
     {% endif %} {% if sidebar.named_individuals | length %}
-    <div id="named-individuals">
-        <h3 id="ninds-headline" class="entity-list">Named Individuals</h3>
+    <div id="named-individuals" class="entity-list">
+        <h3 id="ninds-headline" class="entity-header">Named Individuals</h3>
         {% for ninds in sidebar.named_individuals %}
         <h4><a href="/{{ ninds.identifier }}.html">{{ ninds.display }}</a></h4>
         <div
@@ -141,8 +139,8 @@ head %} {{ super() }}
         {% endfor %}
     </div>
     {% endif %} {% if sidebar.object_props | length %}
-    <div id="object-properties">
-        <h3 id="classes-headline" class="entity-list">Object Properties</h3>
+    <div id="object-properties" class="entity-list">
+        <h3 id="classes-headline" class="entity-header">Object Properties</h3>
         {% for op in sidebar.object_props %}
         <h4><a href="/{{ op.identifier }}.html">{{ op.display }}</a></h4>
         <div

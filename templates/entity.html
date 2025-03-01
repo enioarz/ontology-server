@@ -1,6 +1,6 @@
 {% extends "base.html" %} {% import "macros.html" as macros %} {% block title %}
-Index {% endblock title %} {% block head %} {{ super() }} {% endblock head %} {%
-block aside %}
+{% if label %}{{ label}} {% else %}{{ iri }} {% endif %} {% endblock title %} {%
+block head %} {{ super() }} {% endblock head %} {% block aside %}
 <div></div>
 {% endblock aside%} {% block content %} {% if label %}
 <h3>{{ label}}</h3>

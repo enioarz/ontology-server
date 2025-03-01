@@ -7,12 +7,16 @@
         <meta name="color-scheme" content="light dark" />
         <link rel="stylesheet" href="/static/styles/pico.min.css" />
         <link rel="stylesheet" href="/static/styles/base.css" />
-        <title>{% block title %}{% endblock title %} - Ontology</title>
+        <title>{% block title %}{% endblock title %}</title>
         {% endblock head %}
     </head>
     <body>
         <header id="global-header">
-            {% block header %}My Ontology Project{% endblock header %}
+            {% block header %}My Ontology Project {% if ontology_index%}
+            <div class="nav-item">
+                {% for o in ontology_index %} {% endfor %} {% endif %}
+            </div>
+            {% endblock header %}
         </header>
         <main class="container page-grid">
             {% block aside %} {% endblock aside %}
