@@ -40,3 +40,26 @@ footer {
     margin: 0;
     padding: 0;
 }
+
+a {
+    text-decoration: none;
+}
+
+a::after {
+    position: relative;
+    content: " ▶";
+    margin-left: 0.1em;
+    font-size: 10%;
+    top: -0.1em;
+    color: #933;
+    font-feature-settings: "caps";
+    font-variant-numeric: normal;
+}
+
+a.crossref {
+    content: none;
+    text-transform: lowercase;
+    font-style: normal;
+    hyphens: none;
+    font-variant: small-caps;
+}

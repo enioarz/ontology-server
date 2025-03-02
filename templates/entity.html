@@ -8,8 +8,8 @@ block head %} {{ super() }} {% endblock head %} {% block aside %}
 <h3>{{ iri }}</h3>
 {% endif %}
 <div class="entity-content" id="{{ iri }}">
+    <h5 class="iri">IRI</h5>
     <p>
-        <strong>IRI:</strong>
         <a href="{{ iri }}">{{ iri }}</a>
     </p>
     {% if definition %}

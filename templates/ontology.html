@@ -10,21 +10,33 @@
         <ul id="entities-sidebar">
             {% if sidebar.classes | length %}
             <li>
-                <h4 class="sidebar-header"><a href="#classes">Classes</a></h4>
+                <h4 class="sidebar-header">
+                    <a href="#classes" class="crossref">Classes</a>
+                </h4>
                 <ul class="sidebar-nested">
                     {% for cls in sidebar.classes %}
-                    <li><a href="#{{ cls.iri }}">{{ cls.display }}</a></li>
+                    <li>
+                        <a href="#{{ cls.iri }}" class="crossref"
+                            >{{ cls.display }}</a
+                        >
+                    </li>
                     {% endfor %}
                 </ul>
             </li>
             {% endif %} {% if sidebar.named_individuals | length %}
             <li>
                 <h4 class="sidebar-header">
-                    <a href="#ninds-headline">Named Individuals</a>
+                    <a href="#ninds-headline" class="crossref"
+                        >Named Individuals</a
+                    >
                 </h4>
                 <ul class="sidebar-nested">
                     {% for ind in sidebar.named_individuals %}
-                    <li><a href="#{{ ind.iri }}">{{ ind.display }}</a></li>
+                    <li>
+                        <a href="#{{ ind.iri }}" class="crossref"
+                            >{{ ind.display }}</a
+                        >
+                    </li>
                     {% endfor %}
                 </ul>
             </li>
@@ -33,7 +45,11 @@
                 <h4 class="sidebar-header">Object Properties</h4>
                 <ul class="sidebar-nested">
                     {% for op in sidebar.object_props %}
-                    <li><a href="#{{ op.iri }}">{{ op.display }}</a></li>
+                    <li>
+                        <a href="#{{ op.iri }}" class="crossref"
+                            >{{ op.display }}</a
+                        >
+                    </li>
                     {% endfor %}
                 </ul>
             </li>
@@ -42,7 +58,11 @@
                 <h4 class="sidebar-header">Annotation Properties</h4>
                 <ul class="sidebar-nested">
                     {% for ap in sidebar.annotation_props %}
-                    <li><a href="{{ ap.iri }}">{{ ap.display }}</a></li>
+                    <li>
+                        <a href="{{ ap.iri }}" class="crossref"
+                            >{{ ap.display }}</a
+                        >
+                    </li>
                     {% endfor %}
                 </ul>
             </li>
@@ -51,7 +71,11 @@
                 <h4 class="sidebar-header">Data Properties</h4>
                 <ul class="sidebar-nested">
                     {% for dp in sidebar.data_props %}
-                    <li><a href="{{ dp.iri }}">{{ dp.display }}</a></li>
+                    <li>
+                        <a href="{{ dp.iri }}" class="crossref"
+                            >{{ dp.display }}</a
+                        >
+                    </li>
                     {% endfor %}
                 </ul>
             </li>
@@ -110,7 +134,11 @@
     <div id="classes" class="entity-list">
         <h3 id="classes-headline" class="entity-header">Classes</h3>
         {% for cls in sidebar.classes %}
-        <h4><a href="/{{ cls.identifier }}.html">{{ cls.display }}</a></h4>
+        <h4>
+            <a href="/{{ cls.identifier }}.html" class="crossref"
+                >{{ cls.display }}</a
+            >
+        </h4>
         <div
             class="entity"
             id="{{ cls.iri }}"
@@ -126,7 +154,11 @@
     <div id="named-individuals" class="entity-list">
         <h3 id="ninds-headline" class="entity-header">Named Individuals</h3>
         {% for ninds in sidebar.named_individuals %}
-        <h4><a href="/{{ ninds.identifier }}.html">{{ ninds.display }}</a></h4>
+        <h4>
+            <a href="/{{ ninds.identifier }}.html" class="crossref"
+                >{{ ninds.display }}</a
+            >
+        </h4>
         <div
             class="entity"
             id="{{ ninds.iri }}"
@@ -142,7 +174,11 @@
     <div id="object-properties" class="entity-list">
         <h3 id="classes-headline" class="entity-header">Object Properties</h3>
         {% for op in sidebar.object_props %}
-        <h4><a href="/{{ op.identifier }}.html">{{ op.display }}</a></h4>
+        <h4>
+            <a href="/{{ op.identifier }}.html" class="crossref"
+                >{{ op.display }}</a
+            >
+        </h4>
         <div
             class="entity"
             id="{{ op.iri }}"

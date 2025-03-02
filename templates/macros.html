@@ -1,5 +1,7 @@
 {% macro expand_entity(entity, depth=0) %} {% if entity.Simple %}
-<a href="/{{ entity.Simple.identifier }}.html">{{ entity.Simple.display }}</a>
+<a href="/{{ entity.Simple.identifier }}.html" class="crossref"
+    >{{ entity.Simple.display }}</a
+>
 {% elif entity.And %} {% if depth > 0 %} ( {% endif %} {% for ca in entity.And
 %} {% if loop.last %} {{ self::expand_entity(entity=ca, depth=depth) }} {% else
 %} {{ self::expand_entity(entity=ca, depth=depth) }}
