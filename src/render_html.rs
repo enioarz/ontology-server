@@ -521,10 +521,10 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
         ontology_index.push(EntityDisplay {
             iri: self.settings.ontology.iri.to_string(),
             identifier: String::new(),
-            display: if s == "Ontology Viewer" {
-                String::from("Base")
+            display: if let Some(f) = &self.settings.ontology.suffix {
+                f.clone()
             } else {
-                String::from(s)
+                String::from("Base")
             },
         });
         if let Some(v) = &self.settings.import {
