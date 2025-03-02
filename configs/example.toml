@@ -1,5 +1,5 @@
 baseurl = "http://127.0.0.1:57391/"
-
+title = "The Charging Infrastructure Ontology"
 [ontology]
 iri = "http://openenergy-platform.org/ontology/chio/"
 suffix = "CHIO"

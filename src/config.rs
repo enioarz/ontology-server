@@ -21,6 +21,7 @@ pub struct BuildConfig {
 #[allow(unused)]
 pub struct Settings {
     pub ontology: OntologyConfig,
+    pub title: Option<String>,
     pub baseurl: Option<String>,
     pub import: Option<Vec<OntologyConfig>>,
     pub templates: Option<String>,

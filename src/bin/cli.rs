@@ -160,6 +160,11 @@ pub fn parser_app(m: Option<&ArgMatches>) -> Result<Settings> {
             } else {
                 settings.baseurl.clone()
             },
+            title: if let Some(u) = matches.get_one("Title").map(|m: &String| String::from(m)) {
+                Some(u)
+            } else {
+                settings.title.clone()
+            },
             ontology: OntologyConfig {
                 iri: if let Some(i) = matches.get_one("IRI").map(|m: &String| String::from(m)) {
                     i
@@ -227,6 +232,12 @@ fn cli() -> Command {
                 .short('u')
                 .action(ArgAction::Set)
                 .help("Base URL of the hosted service.")
+                .group("general"),
+            Arg::new("Title")
+                .long("title")
+                .short('l')
+                .action(ArgAction::Set)
+                .help("Title of the webpage. (defaults to 'Ontology Viewer')")
                 .group("general"),
             Arg::new("Templates")
                 .long("templates")

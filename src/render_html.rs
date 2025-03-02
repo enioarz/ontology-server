@@ -348,6 +348,12 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
             context.insert("class_assertions", &class_assertions);
         }
         context.insert("annotations", &annotations);
+        let s = if let Some(f) = &self.settings.ontology.suffix {
+            f
+        } else {
+            &self.settings.ontology.iri
+        };
+        context.insert("title", &s);
         match this_kind {
             Kind::Class => self
                 .templates
@@ -446,58 +452,93 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
             None => &self.settings.ontology.clone(),
         };
         let mut context = TeraContext::default();
-        let mut contributors: Vec<OntologyAnnotation> = vec![];
-        let mut annotations: Vec<OntologyAnnotation> = vec![];
-        for oid in self.ontology.component_for_kind(ComponentKind::OntologyID) {
-            match &oid.component {
-                Component::OntologyID(oi) => {
-                    match &oi.viri {
-                        Some(i) => context.insert("version", i.as_ref()),
-                        None => (),
-                    }
-                    match &oi.iri {
-                        Some(i) => context.insert("iri", i.as_ref()),
-                        None => (),
-                    }
-                }
-                _ => (),
-            }
-        }
-        for oann in self
-            .ontology
-            .component_for_kind(ComponentKind::OntologyAnnotation)
-        {
-            if let Component::OntologyAnnotation(oa) = &oann.component {
-                let ann = match unpack_annotation_value(&oa.0.av) {
-                    Some(vv) => {
-                        let label = match self.prefix_mapping.shrink_iri(oa.0.ap.0.as_ref()) {
-                            Ok(s) => s.into(),
-                            Err(_) => oa.0.ap.0.to_string(),
-                        };
-                        let annotation = OntologyAnnotation {
-                            iri: oa.0.ap.0.to_string(),
-                            display: label,
-                            value: vv,
-                        };
-                        Some(annotation)
-                    }
-                    None => None,
-                };
-                match ann {
-                    Some(aa) => match oa.0.ap.0.underlying().as_ref() {
-                        "http://purl.org/dc/elements/1.1/contributor" => contributors.push(aa),
-                        "http://purl.org/dc/terms/title" => context.insert("title", &aa.value),
-                        "http://purl.org/dc/terms/license" => context.insert("license", &aa.value),
-                        "http://purl.org/dc/terms/description" => {
-                            context.insert("description", &aa.value)
+        if b.iri == self.settings.ontology.iri {
+            let mut contributors: Vec<OntologyAnnotation> = vec![];
+            let mut annotations: Vec<OntologyAnnotation> = vec![];
+            for oid in self.ontology.component_for_kind(ComponentKind::OntologyID) {
+                match &oid.component {
+                    Component::OntologyID(oi) => {
+                        match &oi.viri {
+                            Some(i) => context.insert("version", i.as_ref()),
+                            None => (),
                         }
-                        _ => annotations.push(aa),
-                    },
-                    None => (),
+                        match &oi.iri {
+                            Some(i) => context.insert("iri", i.as_ref()),
+                            None => (),
+                        }
+                    }
+                    _ => (),
                 }
+            }
+            for oann in self
+                .ontology
+                .component_for_kind(ComponentKind::OntologyAnnotation)
+            {
+                if let Component::OntologyAnnotation(oa) = &oann.component {
+                    let ann = match unpack_annotation_value(&oa.0.av) {
+                        Some(vv) => {
+                            let label = match self.prefix_mapping.shrink_iri(oa.0.ap.0.as_ref()) {
+                                Ok(s) => s.into(),
+                                Err(_) => oa.0.ap.0.to_string(),
+                            };
+                            let annotation = OntologyAnnotation {
+                                iri: oa.0.ap.0.to_string(),
+                                display: label,
+                                value: vv,
+                            };
+                            Some(annotation)
+                        }
+                        None => None,
+                    };
+                    match ann {
+                        Some(aa) => match oa.0.ap.0.underlying().as_ref() {
+                            "http://purl.org/dc/elements/1.1/contributor" => contributors.push(aa),
+                            "http://purl.org/dc/terms/title" => context.insert("title", &aa.value),
+                            "http://purl.org/dc/terms/license" => {
+                                context.insert("license", &aa.value)
+                            }
+                            "http://purl.org/dc/terms/description" => {
+                                context.insert("description", &aa.value)
+                            }
+                            _ => annotations.push(aa),
+                        },
+                        None => (),
+                    }
+                } else {
+                }
+            }
+            context.insert("annotations", &annotations);
+            context.insert("contributors", &contributors);
+        }
+
+        let mut ontology_index: Vec<EntityDisplay> = vec![];
+        let s = if let Some(f) = &self.settings.title {
+            f
+        } else {
+            "Ontology Viewer"
+        };
+        context.insert("title", s);
+        ontology_index.push(EntityDisplay {
+            iri: self.settings.ontology.iri.to_string(),
+            identifier: String::new(),
+            display: if s == "Ontology Viewer" {
+                String::from("Base")
             } else {
+                String::from(s)
+            },
+        });
+        if let Some(v) = &self.settings.import {
+            for vc in v.iter() {
+                if let Some(e) = &vc.suffix {
+                    ontology_index.push(EntityDisplay {
+                        iri: vc.iri.clone(),
+                        display: e.clone(),
+                        identifier: e.clone(),
+                    })
+                }
             }
         }
+        context.insert("ontology_index", &ontology_index);
         let entity_tree = match self.collect_entity_tree(b) {
             Ok(sb) => sb,
             Err(e) => {
@@ -508,8 +549,6 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
             }
         };
         context.insert("sidebar", &entity_tree);
-        context.insert("annotations", &annotations);
-        context.insert("contributors", &contributors);
         Ok(self.templates.render("ontology.html", &context)?)
     }
 

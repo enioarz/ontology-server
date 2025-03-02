@@ -5,28 +5,33 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="color-scheme" content="light dark" />
-        <link rel="stylesheet" href="/static/styles/pico.min.css" />
         <link rel="stylesheet" href="/static/styles/base.css" />
         <title>{% block title %}{% endblock title %}</title>
         {% endblock head %}
     </head>
     <body>
         <header id="global-header">
-            {% block header %}My Ontology Project {% if ontology_index%}
-            <div class="nav-item">
-                {% for o in ontology_index %} {% endfor %} {% endif %}
+            <div id="page-header">
+                {% block header %}{{ title }}{% if ontology_index%}
             </div>
-            {% endblock header %}
+            {% for o in ontology_index %}
+            <div class="nav-item">
+                <a href="/{{o.identifier}}">{{o.display}}</a>
+            </div>
+            {% endfor %} {% endif %} {% endblock header %}
         </header>
+        {% block aside %} {% endblock aside %}
         <main class="container page-grid">
-            {% block aside %} {% endblock aside %}
             <div class="content">{% block content %}{% endblock content %}</div>
         </main>
         <footer>
-            {% block footer %} Built using
-            <a href="https://github.com/enioarz/ontology-server"
-                >ontology-server.rs</a
-            >
+            {% block footer %}
+            <div>
+                Built using
+                <a href="https://github.com/enioarz/ontology-server"
+                    >ontology-server.rs</a
+                >
+            </div>
             {% endblock footer %}
         </footer>
     </body>
