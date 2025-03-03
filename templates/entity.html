@@ -9,9 +9,11 @@ block head %} {{ super() }} {% endblock head %} {% block aside %}
 {% endif %}
 <div class="entity-content" id="{{ iri }}">
     <h5 class="iri">IRI</h5>
-    <p>
-        <a href="{{ iri }}">{{ iri }}</a>
-    </p>
+    <div class="metadata">
+        <p>
+            <a href="{{ iri }}">{{ iri }}</a>
+        </p>
+    </div>
     {% if definition %}
     <h5>Definition</h5>
     <div class="metadata">
@@ -23,12 +25,10 @@ block head %} {{ super() }} {% endblock head %} {% block aside %}
         <p>{{ example }}</p>
     </div>
     {% endif %}
-    <dl class="metadata">
         {% for ann in annotations %}
-        <dt><a href="{{ ann.iri }}">{{ ann.display }}</a></dt>
-        <dd>{{ ann.value }}</dd>
+        <h5><a href="{{ ann.iri }}">{{ ann.display }}</a></h5>
+        <div class="metadata"><p>{{ ann.value }}</pü><div>
         {% endfor %}
-    </dl>
     <dl class="metadata">
         <h5>Relations</h5>
         {% if super_classes %}
@@ -61,5 +61,5 @@ block head %} {{ super() }} {% endblock head %} {% block aside %}
     </dl>
 </div>
 {% endblock content %} {% block footer %} {{ super() }}
-<div><a href="/">Back to index</a></div>
+<div><a href="/" class="crossref">INDEX</a></div>
 {% endblock footer %}

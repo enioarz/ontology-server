@@ -494,6 +494,9 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
                         Some(aa) => match oa.0.ap.0.underlying().as_ref() {
                             "http://purl.org/dc/elements/1.1/contributor" => contributors.push(aa),
                             "http://purl.org/dc/terms/title" => context.insert("title", &aa.value),
+                            "http://purl.org/dc/elements/1.1/license" => {
+                                context.insert("license", &aa.value)
+                            }
                             "http://purl.org/dc/terms/license" => {
                                 context.insert("license", &aa.value)
                             }

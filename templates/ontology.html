@@ -91,13 +91,15 @@
 </div>
 <section class="ontology-content" id="{{ iri }}">
     <div class="metadata">
-        <span class="iri-span">IRI:</span>
-        <a href="{{ iri }}">{{ iri }}</a>
+        <h4 class="iri">IRI</h4>
+        <p>
+            <a href="{{ iri }}">{{ iri }}</a>
+        </p>
     </div>
     {% if version %}
     <h4>Version</h4>
     <div class="metadata">
-        <a href="{{ version }}">{{ version }}</a>
+        <p><a href="{{ version }}">{{ version }}</a></p>
     </div>
     {% endif %} {% if description %}
     <h4>Description</h4>

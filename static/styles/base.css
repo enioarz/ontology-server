@@ -11,6 +11,28 @@ body {
     grid-template-rows: 17rem auto 2rem;
 }
 
+p,
+dl {
+    margin-bottom: 1em;
+}
+
+li {
+    margin-bottom: 0.25em;
+}
+
+entity-content > h5 {
+    margin-top: 1rem;
+}
+
+h4 {
+    margin-top: 1rem;
+}
+
+h1,
+h2,
+h3 {
+    margin-top: 1.5rem;
+}
 header {
     grid-column: 1;
     grid-row: 1;
@@ -43,13 +65,14 @@ footer {
 
 a {
     text-decoration: none;
+    color: inherit;
 }
 
 a::after {
     position: relative;
-    content: " ▶";
+    content: "\FEFF°";
     margin-left: 0.1em;
-    font-size: 10%;
+    font-size: 90%;
     top: -0.1em;
     color: #933;
     font-feature-settings: "caps";
@@ -57,9 +80,12 @@ a::after {
 }
 
 a.crossref {
-    content: none;
     text-transform: lowercase;
     font-style: normal;
     hyphens: none;
     font-variant: small-caps;
+}
+
+a.crossref::after {
+    content: none;
 }
