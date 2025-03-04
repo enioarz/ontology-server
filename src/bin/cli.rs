@@ -96,7 +96,10 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
 }
 
 pub fn parser_app(m: Option<&ArgMatches>) -> Result<Settings> {
-    dotenv()?;
+    match dotenv() {
+        Ok(r) => println!("Loaded .env"),
+        Err(e) => println!(".env not found, ignoring"),
+    };
     let env = Env::raw()
         .map(|k| match k.starts_with("HYPPO_") {
             true => k["HYPPO_".len()..].into(),

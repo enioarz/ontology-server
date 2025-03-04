@@ -1,6 +1,7 @@
 baseurl = "https://github.com/enioarz/ontology-server"
 title = "The Basic Formal Ontology"
 templates = "templates"
+
 [ontology]
 iri = "http://purl.obolibrary.org/obo/"
 suffix = "BFO"
