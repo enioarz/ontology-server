@@ -1,4 +1,5 @@
 FROM rust:alpine AS build
+RUN apk add --no-cache musl-dev
 COPY . .
 RUN cargo build --bin hyppo --release
 
