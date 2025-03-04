@@ -7,13 +7,14 @@ body {
     position: relative;
     z-index: -10000;
     display: grid;
-    grid-template-columns: 12rem auto 20rem;
+    grid-template-columns: 12rem auto;
     grid-template-rows: 6rem auto 2rem;
 }
 
 p,
 dl {
     margin-bottom: 1em;
+    width: 60ch;
 }
 
 li {
@@ -86,6 +87,11 @@ a.crossref {
     font-variant: small-caps;
 }
 
+h4 > a.crossref {
+    text-transform: capitalize;
+    font-variant: normal;
+}
+
 a.crossref::after {
     content: none;
 }
@@ -116,4 +122,8 @@ a.crossref::after {
 
 #global-header > div > ul > li {
     display: inline;
+}
+
+.entity-content {
+    margin-bottom: 2em;
 }
