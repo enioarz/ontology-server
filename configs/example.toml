@@ -1,17 +1,10 @@
-baseurl = "http://127.0.0.1:57391/"
-title = "The Charging Infrastructure Ontology"
+baseurl = "https://github.com/enioarz/ontology-server"
+title = "The Basic Formal Ontology"
+templates = "templates"
 [ontology]
-iri = "http://openenergy-platform.org/ontology/chio/"
-suffix = "CHIO"
-source = "ontology/chio-full.owx"
+iri = "http://purl.obolibrary.org/obo/"
+suffix = "BFO"
+source = "test/ontology/bfo.owx"
 
 [build]
 render = true
-
-[[import]]
-iri = "http://purl.obolibrary.org/obo/"
-suffix = "OBO"
-
-[[import]]
-iri = "https://www.commoncoreontologies.org/"
-suffix = "CCO"

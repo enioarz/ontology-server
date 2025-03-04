@@ -1,0 +1,17 @@
+on: [push]
+
+jobs:
+  test_build_job:
+    runs-on: ubuntu-latest
+    name: Test Github Action
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build Ontology
+        uses: ./
+        id: build
+        with:
+          args: "--config configs/example.toml build --render_imports"
+      # Use the output from the `hello` step
+      - name: Get the output time
+        run: echo "The time was ${{ steps.hello.outputs.time }}"

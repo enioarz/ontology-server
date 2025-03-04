@@ -24,7 +24,7 @@ fn main() -> Result<()> {
             let settings = parser_app(Some(&matches))?;
             let mut or = ArcOntologyRender::new_with_settings(settings)?;
             let hm = or.render_all_declarations_html()?;
-            fs::create_dir_all("public").unwrap_or(println!("Folder already exist"));
+            fs::create_dir_all("./public").unwrap_or(println!("Folder already exist"));
             for (k, v) in hm.iter() {
                 match or.prefix_mapping.shrink_iri(k) {
                     Ok(i) => {
@@ -35,19 +35,19 @@ fn main() -> Result<()> {
                             .collect();
                         let prefix_len = iri_parts.len();
                         if prefix_len == 1 {
-                            fs::write(format!("public/{}.html", &iri_parts[0]), v).unwrap();
+                            fs::write(format!("./public/{}.html", &iri_parts[0]), v).unwrap();
                         }
                     }
                     Err(_) => (),
                 }
             }
             fs::write("public/index.html", or.render_metadata_html(None).unwrap()).unwrap();
-            copy_dir_all("static", "public/static")?;
+            copy_dir_all("./static", "./public/static")?;
             if sms.get_flag("Render") {
                 if let Some(im) = &or.settings.import.clone() {
                     for n in im.iter() {
                         if let Some(p) = &n.suffix {
-                            fs::create_dir_all(format!("public/{p}"))
+                            fs::create_dir_all(format!("./public/{p}"))
                                 .unwrap_or(println!("Folder already exist"));
                             for (k, v) in hm.iter() {
                                 match or.prefix_mapping.shrink_iri(k) {
@@ -55,7 +55,7 @@ fn main() -> Result<()> {
                                         let is = i.to_string();
                                         if is.contains(p) {
                                             let iss = is.replace(":", "/");
-                                            fs::write(format!("public/{}.html", iss), v).unwrap();
+                                            fs::write(format!("./public/{}.html", iss), v).unwrap();
                                         }
                                     }
                                     Err(_) => (),

@@ -25,7 +25,9 @@
             </div>
             {% endif %}
 
-            <div id="page-header">{% block header %}{{ title }}</div>
+            <div id="page-header">
+                {% block header %}{% if title %}{{ title }}{% endif %}
+            </div>
             {% endblock header %}
         </header>
         {% block aside %} {% endblock aside %}

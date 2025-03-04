@@ -1,0 +1,19 @@
+name: Ontology Server
+author: Eugenio Salvador Arellano Ruiz
+description: Render static ontology pages.
+branding:
+  icon: align-left
+  color: blue
+inputs:
+  args:
+    description: Arguments passed to `hyppo`
+    required: true
+    default: "build"
+outputs:
+  results:
+    description: Static files necessary to render ontology in a website
+runs:
+  using: docker
+  image: Dockerfile
+  args:
+    - ${{ inputs.args }}
