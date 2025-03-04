@@ -7,8 +7,8 @@ body {
     position: relative;
     z-index: -10000;
     display: grid;
-    grid-template-columns: 12rem auto;
-    grid-template-rows: 17rem auto 2rem;
+    grid-template-columns: 12rem auto 20rem;
+    grid-template-rows: 6rem auto 2rem;
 }
 
 p,
@@ -88,4 +88,32 @@ a.crossref {
 
 a.crossref::after {
     content: none;
+}
+
+#global-header {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    margin-top: 1.5em;
+    margin-bottom: 1em;
+    margin-right: 1em;
+}
+
+#global-header > div {
+    display: block;
+    width: 100%;
+    margin-bottom: 0.5em;
+}
+
+#page-header {
+    text-align: left;
+}
+
+#global-header > div > ul {
+    display: inline-block;
+    align-content: flex-end;
+}
+
+#global-header > div > ul > li {
+    display: inline;
 }

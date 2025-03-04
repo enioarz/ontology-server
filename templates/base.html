@@ -11,14 +11,22 @@
     </head>
     <body>
         <header id="global-header">
-            <div id="page-header">
-                {% block header %}{{ title }}{% if ontology_index%}
+            {% if ontology_index%}
+            <div>
+                <ul>
+                    {% for o in ontology_index %}
+                    <li class="nav-item">
+                        <a href="/{{o.identifier}}" class="crossref"
+                            >{{o.display}}</a
+                        >
+                    </li>
+                    {% endfor %}
+                </ul>
             </div>
-            {% for o in ontology_index %}
-            <div class="nav-item">
-                <a href="/{{o.identifier}}" class="crossref">{{o.display}}</a>
-            </div>
-            {% endfor %} {% endif %} {% endblock header %}
+            {% endif %}
+
+            <div id="page-header">{% block header %}{{ title }}</div>
+            {% endblock header %}
         </header>
         {% block aside %} {% endblock aside %}
         <main class="container page-grid">
