@@ -24,7 +24,13 @@ fn main() -> Result<()> {
             let settings = parser_app(Some(&matches))?;
             let mut or = ArcOntologyRender::new_with_settings(settings)?;
             let hm = or.render_all_declarations_html()?;
-            fs::create_dir_all("./public").unwrap_or(println!("Folder already exist"));
+            let output_dir = &or
+                .settings
+                .build
+                .clone()
+                .expect("Expected build config")
+                .output;
+            fs::create_dir_all(output_dir).unwrap_or(println!("Folder already exist"));
             for (k, v) in hm.iter() {
                 match or.prefix_mapping.shrink_iri(k) {
                     Ok(i) => {
@@ -35,19 +41,26 @@ fn main() -> Result<()> {
                             .collect();
                         let prefix_len = iri_parts.len();
                         if prefix_len == 1 {
-                            fs::write(format!("./public/{}.html", &iri_parts[0]), v).unwrap();
+                            fs::write(format!("{}/{}.html", output_dir, &iri_parts[0]), v).unwrap();
                         }
                     }
                     Err(_) => (),
                 }
             }
-            fs::write("public/index.html", or.render_metadata_html(None).unwrap()).unwrap();
-            copy_dir_all("./static", "./public/static")?;
+            fs::write(
+                format!("{}/index.html", output_dir),
+                or.render_metadata_html(None).unwrap(),
+            )
+            .unwrap();
+            if let Some(sd) = &or.settings.assets {
+                copy_dir_all(sd, format!("{output_dir}/static"))?;
+            }
+
             if sms.get_flag("Render") {
                 if let Some(im) = &or.settings.import.clone() {
                     for n in im.iter() {
                         if let Some(p) = &n.suffix {
-                            fs::create_dir_all(format!("./public/{p}"))
+                            fs::create_dir_all(format!("{output_dir}/{p}"))
                                 .unwrap_or(println!("Folder already exist"));
                             for (k, v) in hm.iter() {
                                 match or.prefix_mapping.shrink_iri(k) {
@@ -55,14 +68,15 @@ fn main() -> Result<()> {
                                         let is = i.to_string();
                                         if is.contains(p) {
                                             let iss = is.replace(":", "/");
-                                            fs::write(format!("./public/{}.html", iss), v).unwrap();
+                                            fs::write(format!("./{output_dir}/{iss}.html"), v)
+                                                .unwrap();
                                         }
                                     }
                                     Err(_) => (),
                                 }
                             }
                             fs::write(
-                                format!("public/{p}/index.html"),
+                                format!("{output_dir}/{p}/index.html"),
                                 or.render_metadata_html(Some(&n)).unwrap(),
                             )
                             .unwrap();
@@ -97,8 +111,8 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
 
 pub fn parser_app(m: Option<&ArgMatches>) -> Result<Settings> {
     match dotenv() {
-        Ok(r) => println!("Loaded .env"),
-        Err(e) => println!(".env not found, ignoring"),
+        Ok(_r) => println!("Loaded .env"),
+        Err(_e) => println!(".env not found, ignoring"),
     };
     let env = Env::raw()
         .map(|k| match k.starts_with("HYPPO_") {
@@ -153,9 +167,16 @@ pub fn parser_app(m: Option<&ArgMatches>) -> Result<Settings> {
         let cli_build = if let Some(("build", sms)) = matches.subcommand() {
             BuildConfig {
                 render: sms.get_flag("Render"),
+                output: sms
+                    .get_one::<String>("Output")
+                    .expect("Output folder not defined.")
+                    .clone(),
             }
         } else {
-            BuildConfig { render: false }
+            BuildConfig {
+                render: false,
+                output: String::from("./public"),
+            }
         };
         let cli_settings = Settings {
             baseurl: if let Some(u) = matches.get_one("URL").map(|m: &String| String::from(m)) {
@@ -195,6 +216,11 @@ pub fn parser_app(m: Option<&ArgMatches>) -> Result<Settings> {
                 Some(t)
             } else {
                 settings.templates.clone()
+            },
+            assets: if let Some(t) = matches.get_one("Assets").map(|m: &String| String::from(m)) {
+                Some(t)
+            } else {
+                settings.assets.clone()
             },
             build: Some(cli_build),
         };
@@ -247,7 +273,14 @@ fn cli() -> Command {
                 .short('t')
                 .action(ArgAction::Set)
                 .help("Tera templates directory.")
-                .default_value("templates")
+                .default_value("./templates")
+                .group("general"),
+            Arg::new("Assets")
+                .short('s')
+                .long("assets")
+                .action(ArgAction::Set)
+                .help("Location of static assets.")
+                .default_value("./static")
                 .group("general"),
             Arg::new("Config")
                 .long("config")
@@ -265,12 +298,21 @@ fn cli() -> Command {
         .subcommand(
             clap::command!("build")
                 .about("Build ontology static files.")
-                .args([Arg::new("Render")
-                    .long("render_imports")
-                    .short('r')
-                    .action(ArgAction::SetTrue)
-                    .help("Render Imports.")
-                    .group("general")]),
+                .args([
+                    Arg::new("Render")
+                        .long("render_imports")
+                        .short('r')
+                        .action(ArgAction::SetTrue)
+                        .help("Render Imports.")
+                        .group("build"),
+                    Arg::new("Output")
+                        .long("output")
+                        .short('o')
+                        .action(ArgAction::Set)
+                        .help("Output directory.")
+                        .default_value("./public")
+                        .group("build"),
+                ]),
         )
         .subcommand_help_heading("Commands")
 }

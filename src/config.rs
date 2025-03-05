@@ -16,6 +16,7 @@ pub struct OntologyConfig {
 #[allow(unused)]
 pub struct BuildConfig {
     pub render: bool,
+    pub output: String,
 }
 #[derive(Deserialize, Debug, Serialize)]
 #[allow(unused)]
@@ -25,6 +26,7 @@ pub struct Settings {
     pub baseurl: Option<String>,
     pub import: Option<Vec<OntologyConfig>>,
     pub templates: Option<String>,
+    pub assets: Option<String>,
     pub build: Option<BuildConfig>,
 }
 

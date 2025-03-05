@@ -1,6 +1,7 @@
 baseurl = "https://github.com/enioarz/ontology-server"
 title = "The Basic Formal Ontology"
 templates = "templates"
+assets = "static"
 
 [ontology]
 iri = "http://purl.obolibrary.org/obo/"
@@ -8,4 +9,5 @@ suffix = "BFO"
 source = "test/ontology/bfo.owx"
 
 [build]
+output = "./public"
 render = true
