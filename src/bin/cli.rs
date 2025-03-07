@@ -241,58 +241,49 @@ fn cli() -> Command {
         .arg(
             Arg::new("IRI")
                 .action(ArgAction::Set)
-                .help("IRI of the main ontology.")
-                .group("general"),
+                .help("IRI of the main ontology."),
         )
         .args([
             Arg::new("Source")
                 .long("source")
                 .action(ArgAction::Set)
-                .help("Source of the ontology file (currently only supports local files)")
-                .group("general"),
+                .help("Source of the ontology file (currently only supports local files)"),
             Arg::new("Suffix")
                 .long("suffix")
                 .action(ArgAction::Set)
-                .help("Suffix of the ontology")
-                .group("general"),
+                .help("Suffix of the ontology"),
             Arg::new("URL")
                 .long("url")
                 .short('u')
                 .action(ArgAction::Set)
-                .help("Base URL of the hosted service.")
-                .group("general"),
+                .help("Base URL of the hosted service."),
             Arg::new("Title")
                 .long("title")
                 .short('l')
                 .action(ArgAction::Set)
-                .help("Title of the webpage. (defaults to 'Ontology Viewer')")
-                .group("general"),
+                .help("Title of the webpage. (defaults to 'Ontology Viewer')"),
             Arg::new("Templates")
                 .long("templates")
                 .short('t')
                 .action(ArgAction::Set)
                 .help("Tera templates directory.")
-                .default_value("./templates")
-                .group("general"),
+                .default_value("./templates"),
             Arg::new("Assets")
                 .short('s')
                 .long("assets")
                 .action(ArgAction::Set)
                 .help("Location of static assets.")
-                .default_value("./static")
-                .group("general"),
+                .default_value("./static"),
             Arg::new("Config")
                 .long("config")
                 .short('c')
                 .action(ArgAction::Set)
-                .help("Configuration directory.")
-                .group("general"),
+                .help("Configuration directory."),
             Arg::new("Imported")
                 .short('p')
                 .long("import")
                 .action(ArgAction::Append)
-                .help("Imported ontologies to render. Expects 'prefix:iri' syntax.")
-                .group("general"),
+                .help("Imported ontologies to render. Expects 'prefix:iri' syntax."),
         ])
         .subcommand(
             clap::command!("build")
@@ -302,15 +293,13 @@ fn cli() -> Command {
                         .long("render_imports")
                         .short('r')
                         .action(ArgAction::SetTrue)
-                        .help("Render Imports.")
-                        .group("build"),
+                        .help("Render Imports."),
                     Arg::new("Output")
                         .long("output")
                         .short('o')
                         .action(ArgAction::Set)
                         .help("Output directory.")
-                        .default_value("./public")
-                        .group("build"),
+                        .default_value("./public"),
                 ]),
         )
         .subcommand_help_heading("Commands")
