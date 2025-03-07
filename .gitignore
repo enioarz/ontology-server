@@ -4,3 +4,4 @@ ontology/
 .DS_Store
 .env
 public/*
+.vscode
