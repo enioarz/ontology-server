@@ -11,7 +11,7 @@ jobs:
         uses: ./
         id: build
         with:
-          args: "--config ./configs/example.toml build --render_imports --assets ./static --output ./public"
+          args: --config ./configs/example.toml build --render_imports --assets ./static --output ./public
       - name: Get the output
         run: echo "${{ steps.build.outputs.results }}"
       - name: Upload Build Artifacts
