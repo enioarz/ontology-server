@@ -138,7 +138,6 @@ pub fn parser_app(m: Option<&ArgMatches>) -> Result<Settings> {
     } else {
         pre
     };
-
     let settings: Settings = pre.extract()?;
     let fig: Figment = if let Some(matches) = m {
         let imports: Option<Vec<OntologyConfig>> = matches.get_many("Imported").map(|m| {
