@@ -1,2 +1,2 @@
 #!/bin/sh -l
-hyppo "$@"
+hyppo $@
