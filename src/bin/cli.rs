@@ -256,7 +256,7 @@ fn cli() -> Command {
                 .long("url")
                 .short('u')
                 .action(ArgAction::Set)
-                .help("Base URL of the hosted service."),
+                .help("Base URL of the hosted service. Can be relative or absolute."),
             Arg::new("Title")
                 .long("title")
                 .short('l')

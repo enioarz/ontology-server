@@ -1,6 +1,6 @@
 {% extends "base.html" %} {% block title %} {% if title %} {{ title }} {% endif
 %}{% endblock title %} {% block head %} {{ super() }}
-<script src="/static/scripts/htmx.js"></script>
+<script src="{{ base }}static/scripts/htmx.js"></script>
 <script>
     htmx.config.ignoreTitle = true;
 </script>
@@ -137,14 +137,14 @@
         <h3 id="classes-headline" class="entity-header">Classes</h3>
         {% for cls in sidebar.classes %}
         <h4>
-            <a href="/{{ cls.identifier }}.html" class="crossref"
+            <a href="{{ base }}{{ cls.identifier }}.html" class="crossref"
                 >{{ cls.display }}</a
             >
         </h4>
         <div
             class="entity"
             id="{{ cls.iri }}"
-            hx-get="/{{ cls.identifier }}.html"
+            hx-get="{{ base }}{{ cls.identifier }}.html"
             hx-trigger="load"
             hx-select=".entity-content"
         >
@@ -157,14 +157,14 @@
         <h3 id="ninds-headline" class="entity-header">Named Individuals</h3>
         {% for ninds in sidebar.named_individuals %}
         <h4>
-            <a href="/{{ ninds.identifier }}.html" class="crossref"
+            <a href="{{ base }}{{ ninds.identifier }}.html" class="crossref"
                 >{{ ninds.display }}</a
             >
         </h4>
         <div
             class="entity"
             id="{{ ninds.iri }}"
-            hx-get="/{{ ninds.identifier }}.html"
+            hx-get="{{ base }}{{ ninds.identifier }}.html"
             hx-trigger="load"
             hx-select=".entity-content"
         >
@@ -177,14 +177,14 @@
         <h3 id="classes-headline" class="entity-header">Object Properties</h3>
         {% for op in sidebar.object_props %}
         <h4>
-            <a href="/{{ op.identifier }}.html" class="crossref"
+            <a href="{{ base }}{{ op.identifier }}.html" class="crossref"
                 >{{ op.display }}</a
             >
         </h4>
         <div
             class="entity"
             id="{{ op.iri }}"
-            hx-get="/{{ op.identifier }}.html"
+            hx-get="{{ base }}{{ op.identifier }}.html"
             hx-trigger="load"
             hx-select=".entity-content"
         >

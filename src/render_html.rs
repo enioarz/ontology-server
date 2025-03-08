@@ -168,6 +168,10 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
         let mut sub_entities: Vec<DisplayComp> = vec![];
         let mut equivalent_classes: Vec<DisplayComp> = vec![];
         let mut class_assertions: Vec<DisplayComp> = vec![];
+        context.insert(
+            "base",
+            &self.settings.baseurl.clone().unwrap_or(String::from("/")),
+        );
         let anns: Vec<AnnotatedComponent<A>> = self
             .ontology
             .components_for_iri(&iri)
@@ -452,6 +456,10 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
             None => &self.settings.ontology.clone(),
         };
         let mut context = TeraContext::default();
+        context.insert(
+            "base",
+            &self.settings.baseurl.clone().unwrap_or(String::from("/")),
+        );
         if b.iri == self.settings.ontology.iri {
             let mut contributors: Vec<OntologyAnnotation> = vec![];
             let mut annotations: Vec<OntologyAnnotation> = vec![];

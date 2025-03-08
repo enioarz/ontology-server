@@ -1,4 +1,4 @@
-baseurl = "https://github.com/enioarz/ontology-server"
+baseurl = "/"
 title = "The Basic Formal Ontology"
 templates = "templates"
 assets = "static"

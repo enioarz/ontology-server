@@ -5,7 +5,7 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="color-scheme" content="light dark" />
-        <link rel="stylesheet" href="/static/styles/base.css" />
+        <link rel="stylesheet" href="{{ base }}static/styles/base.css" />
         <title>{% block title %}{% endblock title %}</title>
         {% endblock head %}
     </head>
@@ -16,7 +16,7 @@
                 <ul>
                     {% for o in ontology_index %}
                     <li class="nav-item">
-                        <a href="/{{o.identifier}}" class="crossref"
+                        <a href="{{ base }}{{o.identifier}}" class="crossref"
                             >{{o.display}}</a
                         >
                     </li>
