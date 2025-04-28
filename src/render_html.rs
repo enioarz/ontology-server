@@ -2,12 +2,7 @@ use curie::PrefixMapping;
 use eyre::{Context, Result};
 use horned_owl::io::owx::reader::read_with_build;
 use horned_owl::model::{
-    AnnotatedComponent, AnnotationProperty, AnnotationSubject, AnnotationValue, ArcStr, Build,
-    Class, ClassAssertion, ClassExpression, DeclareAnnotationProperty, DeclareClass,
-    DeclareNamedIndividual, DeclareObjectProperty, EquivalentClasses, Individual,
-    InverseObjectProperties, Literal, NamedIndividual, ObjectProperty, ObjectPropertyDomain,
-    ObjectPropertyExpression, ObjectPropertyRange, RcStr, SubClassOf, SubObjectPropertyExpression,
-    SubObjectPropertyOf,
+    AnnotatedComponent, AnnotationProperty, AnnotationSubject, AnnotationValue, ArcStr, Build, Class, ClassAssertion, ClassExpression, DataProperty, DataPropertyDomain, DataPropertyRange, DeclareAnnotationProperty, DeclareClass, DeclareDataProperty, DeclareNamedIndividual, DeclareObjectProperty, EquivalentClasses, Individual, InverseObjectProperties, Literal, NamedIndividual, ObjectProperty, ObjectPropertyDomain, ObjectPropertyExpression, ObjectPropertyRange, RcStr, SubClassOf, SubObjectPropertyExpression, SubObjectPropertyOf
 };
 use horned_owl::model::{Component, ComponentKind, ForIRI, IRI};
 use horned_owl::ontology::indexed::ForIndex;
@@ -41,6 +36,7 @@ enum Kind {
     AnnotationProperty,
     NamedIndividual,
     Undefined,
+    DataProperty
 }
 
 #[derive(Serialize)]
@@ -201,6 +197,11 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
                     this_kind = Kind::NamedIndividual;
                     context.insert("kind", "named-individual")
                 }
+                Component::DeclareDataProperty(dp) => {
+                    context.insert("iri", dp.0.0.as_ref());
+                    this_kind = Kind::DataProperty;
+                    context.insert("kind", "data-property")
+                }
                 Component::AnnotationAssertion(aa) => match aa.ann.ap.0.as_ref() {
                     "http://www.w3.org/2000/01/rdf-schema#label" => context.insert(
                         "label",
@@ -319,6 +320,23 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
                         context.insert("op_domain", &ce_display);
                     }
                 }
+                Component::DataPropertyRange(DataPropertyRange {
+                    dp: DataProperty(ii),
+                    dr,
+                }) => {
+                    if ii == iri {
+                        ()
+                    }
+                }
+                Component::DataPropertyDomain(DataPropertyDomain {
+                    dp: DataProperty(ii),
+                    ce,
+                }) => {
+                    if ii == iri {
+                        let ce_display = self.unpack_class_expression(ce.clone());
+                        context.insert("op_domain", &ce_display);
+                    }
+                }
                 Component::DisjointClasses(_) => (),
                 Component::DisjointObjectProperties(_) => (),
                 Component::DisjointDataProperties(_) => (),
@@ -372,6 +390,10 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
                 .render("entity.html", &context)
                 .wrap_err("Could not render ann prop page"),
             Kind::NamedIndividual => self
+                .templates
+                .render("entity.html", &context)
+                .wrap_err("Could not render ann prop page"),
+            Kind::DataProperty => self
                 .templates
                 .render("entity.html", &context)
                 .wrap_err("Could not render ann prop page"),
@@ -626,6 +648,24 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
                     if ii.contains(&base.iri) {
                         let ap_display = self.build_entity_display(ii.clone());
                         side_bar.annotation_props.push(ap_display)
+                    }
+                }
+                _ => (),
+            }
+        }
+        let ddps: Vec<AnnotatedComponent<A>> = self
+            .ontology
+            .component_for_kind(ComponentKind::DeclareDataProperty)
+            .map(|x| x.clone())
+            .collect();
+        for ddp in ddps {
+            match &ddp.component {
+                Component::DeclareDataProperty(DeclareDataProperty(
+                    DataProperty(ii),
+                )) => {
+                    if ii.contains(&base.iri) {
+                        let dp_display = self.build_entity_display(ii.clone());
+                        side_bar.annotation_props.push(dp_display)
                     }
                 }
                 _ => (),
