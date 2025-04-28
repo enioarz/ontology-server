@@ -192,6 +192,26 @@
         </div>
         {% endfor %}
     </div>
-    {% endif %} {% endif %}
+    {% endif %} {% if sidebar.data_props | length %}
+    <div id="data-properties" class="entity-list">
+        <h3 id="classes-headline" class="entity-header">Data Properties</h3>
+        {% for dp in sidebar.data_props %}
+        <h4>
+            <a href="{{ base }}{{ dp.identifier }}.html" class="crossref"
+                >{{ dp.display }}</a
+            >
+        </h4>
+        <div
+            class="entity"
+            id="{{ dp.iri }}"
+            hx-get="{{ base }}{{ dp.identifier }}.html"
+            hx-trigger="load"
+            hx-select=".entity-content"
+        >
+            <div></div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}{% endif %}
 </section>
 {% endblock content %}
