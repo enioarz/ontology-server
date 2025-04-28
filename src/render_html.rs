@@ -660,24 +660,6 @@ impl<A: ForIRI, AA: ForIndex<A>> IRIMappedRenderHTML<A> for OntologyRender<A, AA
             .collect();
         for ddp in ddps {
             match &ddp.component {
-                Component::DeclareDataProperty(DeclareDataProperty(
-                    DataProperty(ii),
-                )) => {
-                    if ii.contains(&base.iri) {
-                        let dp_display = self.build_entity_display(ii.clone());
-                        side_bar.annotation_props.push(dp_display)
-                    }
-                }
-                _ => (),
-            }
-        }
-        let ddps: Vec<AnnotatedComponent<A>> = self
-            .ontology
-            .component_for_kind(ComponentKind::DeclareDataProperty)
-            .map(|x| x.clone())
-            .collect();
-        for ddp in ddps {
-            match &ddp.component {
                 Component::DeclareDataProperty(dp) => {
                     let class_iri = &dp.0.0;
                     if class_iri.contains(&base.iri) {
