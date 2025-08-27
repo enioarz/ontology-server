@@ -2,7 +2,12 @@ use curie::PrefixMapping;
 use eyre::{Context, Result};
 use horned_owl::io::owx::reader::read_with_build;
 use horned_owl::model::{
-    AnnotatedComponent, AnnotationProperty, AnnotationSubject, AnnotationValue, ArcStr, Build, Class, ClassAssertion, ClassExpression, DataProperty, DataPropertyDomain, DataPropertyRange, DeclareAnnotationProperty, DeclareClass, DeclareDataProperty, DeclareNamedIndividual, DeclareObjectProperty, EquivalentClasses, Individual, InverseObjectProperties, Literal, NamedIndividual, ObjectProperty, ObjectPropertyDomain, ObjectPropertyExpression, ObjectPropertyRange, RcStr, SubClassOf, SubObjectPropertyExpression, SubObjectPropertyOf
+    AnnotatedComponent, AnnotationProperty, AnnotationSubject, AnnotationValue, ArcStr, Build,
+    Class, ClassAssertion, ClassExpression, DataProperty, DataPropertyDomain, DataPropertyRange,
+    DeclareAnnotationProperty, DeclareClass, DeclareNamedIndividual, DeclareObjectProperty,
+    EquivalentClasses, Individual, InverseObjectProperties, Literal, NamedIndividual,
+    ObjectProperty, ObjectPropertyDomain, ObjectPropertyExpression, ObjectPropertyRange, RcStr,
+    SubClassOf, SubObjectPropertyExpression, SubObjectPropertyOf,
 };
 use horned_owl::model::{Component, ComponentKind, ForIRI, IRI};
 use horned_owl::ontology::indexed::ForIndex;
@@ -36,7 +41,7 @@ enum Kind {
     AnnotationProperty,
     NamedIndividual,
     Undefined,
-    DataProperty
+    DataProperty,
 }
 
 #[derive(Serialize)]
@@ -838,8 +843,8 @@ impl<A: ForIRI, AA: ForIndex<A>> OntologyRender<A, AA> {
         let reader = BufReader::new(f);
         let r = read_with_build(reader, &build);
         assert!(r.is_ok(), "Expected ontology, got failure:{:?}", r.err());
-        let (o, mut prefix_mapping) = r.ok().unwrap();
-        let mut ontology: IRIMappedOntology<A, AA> = IRIMappedOntology::from(o);
+        let (mut ontology, mut prefix_mapping): (IRIMappedOntology<A, AA>, PrefixMapping) =
+            r.ok().unwrap();
         let label_map = get_label_hashmap(&mut ontology);
         prefix_mapping.set_default(&settings.ontology.iri);
         if let Some(imports) = &settings.import {
